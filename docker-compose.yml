@@ -1,0 +1,49 @@
+services:
+  postgis:
+    image: postgis/postgis:17-3.5
+    container_name: gis-postgis
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gis}
+      POSTGRES_USER: ${POSTGRES_USER:-gis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gis_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gis} -d ${POSTGRES_DB:-gis}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    container_name: gis-migrate
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gis}:${POSTGRES_PASSWORD:-gis_password}@postgis:5432/${POSTGRES_DB:-gis}
+    depends_on:
+      postgis:
+        condition: service_healthy
+    restart: "no"
+
+  webapp:
+    build:
+      context: .
+      target: runner
+    container_name: gis-webapp
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gis}:${POSTGRES_PASSWORD:-gis_password}@postgis:5432/${POSTGRES_DB:-gis}
+    ports:
+      - "3017:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgis_data:

@@ -1,3 +1,17 @@
+## Rule
+- Don't   run  test  or build if user not request.
+
+## Tool
+- use `db-cli --help` to manipulate database.
+- read database credential from @.env .
+
+## Testing
+- Use `playwright-cli` skill to test this repo
+- After open url always run `playwright-cli show` for show your test action to user.
+
+## Deploy
+- read @docs/DEPLOY.md
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

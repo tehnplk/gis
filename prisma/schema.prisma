@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// ระดับความรุนแรงตามการคัดแยกผู้ป่วย (triage level)
+enum Triage {
+  black  // เสียชีวิต / ไม่สามารถช่วยได้
+  red    // วิกฤต ต้องช่วยทันที
+  orange // ฉุกเฉินเร่งด่วน
+  yellow // เร่งด่วน รอได้ระยะสั้น
+  green  // ไม่รุนแรง รอได้
+
+  @@map("triage")
+}
+
+model Accident {
+  id                Int      @id @default(autoincrement())
+  incident_datetime DateTime @db.Timestamptz(6)
+  hn                String?  @db.VarChar(50)
+  pname             String?  @db.VarChar(50)
+  fname             String?  @db.VarChar(100)
+  lname             String?  @db.VarChar(100)
+  place             String?  @db.VarChar(255)
+  district          String?  @db.VarChar(100)
+  subdistrict       String?  @db.VarChar(100)
+  drunk             Boolean?
+  triage            Triage?
+  place_coordinate  Unsupported("geometry(Point, 4326)")?
+
+  @@index([place_coordinate], type: Gist)
+  @@index([incident_datetime])
+  @@index([hn])
+  @@index([triage])
+  @@index([district])
+  @@map("accident")
+}
+
+model RescueBase {
+  id            Int     @id @default(autoincrement())
+  name          String  @db.VarChar(255)
+  level         String? @db.VarChar(50)
+  vehicle_level String? @db.VarChar(50)
+  coordinate    Unsupported("geometry(Point, 4326)")?
+
+  @@index([coordinate], type: Gist)
+  @@map("rescue_base")
+}
+
+model RiskPoint {
+  id         Int     @id @default(autoincrement())
+  place_name String  @db.VarChar(255)
+  note       String? @db.Text
+  coordinate Unsupported("geometry(Point, 4326)")?
+
+  @@index([coordinate], type: Gist)
+  @@map("risk_point")
+}
+
+/// ขอบเขตอำเภอ (ADM2) นำเข้าจาก desktop GIS — HDX/OCHA Thailand boundaries
+model DistrictBoundary {
+  id            Int     @id @default(autoincrement())
+  code          String  @unique @db.VarChar(20)
+  name_th       String  @db.VarChar(120)
+  name_en       String? @db.VarChar(120)
+  province_code String? @db.VarChar(20)
+  province_th   String? @db.VarChar(120)
+  geom          Unsupported("geometry(MultiPolygon, 4326)")?
+
+  @@index([geom], type: Gist)
+  @@map("district_boundary")
+}
+
+/// ขอบเขตตำบล (ADM3) นำเข้าจาก desktop GIS — HDX/OCHA Thailand boundaries
+model SubdistrictBoundary {
+  id            Int     @id @default(autoincrement())
+  code          String  @unique @db.VarChar(20)
+  name_th       String  @db.VarChar(120)
+  name_en       String? @db.VarChar(120)
+  district_code String? @db.VarChar(20)
+  district_th   String? @db.VarChar(120)
+  province_code String? @db.VarChar(20)
+  province_th   String? @db.VarChar(120)
+  geom          Unsupported("geometry(MultiPolygon, 4326)")?
+
+  @@index([geom], type: Gist)
+  @@index([district_code])
+  @@map("subdistrict_boundary")
+}
