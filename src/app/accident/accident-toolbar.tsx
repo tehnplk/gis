@@ -25,7 +25,7 @@ const FILTER_KEYS = ["from", "to", "district"] as const;
  * (ค่าเริ่มต้นของเบราว์เซอร์บน input[type=date] ไม่สม่ำเสมอ)
  */
 export const CONTROL_CLASS =
-  "h-9 rounded-md border border-sky-900/25 bg-white px-2.5 text-sm text-slate-900 " +
+  "h-10 rounded-md border border-sky-900/25 bg-white px-2.5 text-sm text-slate-900 sm:h-9 " +
   "transition-colors outline-none focus-visible:border-white focus-visible:ring-2 " +
   "focus-visible:ring-white/70";
 
@@ -67,22 +67,22 @@ export default function AccidentToolbar({
   };
 
   return (
-    <header className="relative z-[1200] flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-sky-950 bg-sky-800 px-4 py-2.5 shadow-sm">
+    <header className="relative z-[1200] flex shrink-0 flex-wrap items-stretch gap-x-3 gap-y-2 border-b border-sky-950 bg-sky-800 px-3 py-2.5 shadow-sm sm:items-center sm:px-4 2xl:flex-nowrap">
       {/* กลุ่มตราหน่วยงาน */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex w-full min-w-0 items-center gap-2.5 sm:w-auto">
         <Image
           src="/logo.png"
           alt="ตราสำนักงานปลัดกระทรวงสาธารณสุข"
           width={38}
           height={38}
           priority
-          className="shrink-0"
+          className="size-9 shrink-0 sm:size-[38px]"
         />
-        <div className="leading-tight">
-          <h1 className="text-[15px] font-semibold whitespace-nowrap text-white">
+        <div className="min-w-0 leading-tight">
+          <h1 className="text-sm font-semibold leading-5 text-white sm:text-[15px] sm:whitespace-nowrap">
             แผนที่จุดเกิดอุบัติเหตุทางถนน
           </h1>
-          <p className="text-xs whitespace-nowrap text-sky-100">
+          <p className="truncate text-[11px] text-sky-100 sm:text-xs sm:whitespace-nowrap">
             สำนักงานสาธารณสุขจังหวัดพิษณุโลก
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function AccidentToolbar({
       {/* ช่วงวันที่ — ใช้คำเชื่อมแทนป้ายกำกับด้านบน
           input[type=date] ไม่รองรับ placeholder เบราว์เซอร์จะโชว์รูปแบบวันที่ให้เอง
           ยังใส่ aria-label ไว้เพื่อให้ screen reader รู้ว่าช่องไหนคือช่องไหน */}
-      <div className="flex items-center gap-2">
+      <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2 sm:flex sm:w-auto">
         <span className={CONNECTOR}>ระหว่าง</span>
         <input
           type="date"
@@ -105,7 +105,7 @@ export default function AccidentToolbar({
           min={dateBounds.min ?? undefined}
           max={to || (dateBounds.max ?? undefined)}
           onChange={(e) => setParam("from", e.target.value)}
-          className={CONTROL_CLASS}
+          className={`${CONTROL_CLASS} w-full min-w-0 sm:w-auto`}
         />
         <span className={CONNECTOR}>ถึง</span>
         <input
@@ -115,7 +115,7 @@ export default function AccidentToolbar({
           min={from || (dateBounds.min ?? undefined)}
           max={dateBounds.max ?? undefined}
           onChange={(e) => setParam("to", e.target.value)}
-          className={CONTROL_CLASS}
+          className={`${CONTROL_CLASS} w-full min-w-0 sm:w-auto`}
         />
       </div>
 
@@ -124,7 +124,7 @@ export default function AccidentToolbar({
         aria-label="อำเภอ"
         value={district}
         onChange={(e) => setParam("district", e.target.value)}
-        className={`${CONTROL_CLASS} min-w-40 cursor-pointer`}
+        className={`${CONTROL_CLASS} w-full min-w-0 cursor-pointer sm:w-auto sm:min-w-40`}
       >
         <option value="">ทุกอำเภอ</option>
         {districts.map((name) => (
@@ -140,7 +140,7 @@ export default function AccidentToolbar({
         <button
           type="button"
           onClick={clearFilters}
-          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-white/40 bg-white/10 px-2.5 text-sm text-white transition-colors outline-none hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70"
+          className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border border-white/40 bg-white/10 px-2.5 text-sm text-white transition-colors outline-none hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70 sm:h-9 sm:w-auto"
         >
           {/* ไอคอน SVG ไม่ใช้ emoji เพื่อให้คมทุกความละเอียดและอ่านออกด้วย screen reader */}
           <svg
@@ -161,7 +161,7 @@ export default function AccidentToolbar({
       {/* ตัวเลขผลลัพธ์ */}
       <div
         aria-live="polite"
-        className={`ml-auto rounded-md bg-white/15 px-2.5 py-1.5 text-sm tabular-nums transition-opacity ${
+        className={`flex h-10 w-[calc(50%-0.375rem)] items-center justify-center rounded-md bg-white/15 px-2.5 text-sm tabular-nums transition-opacity sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5 ${
           isPending ? "opacity-50" : ""
         }`}
       >
@@ -174,7 +174,7 @@ export default function AccidentToolbar({
 
       <Link
         href="/accident/upload"
-        className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-white/40 bg-sky-950 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        className="inline-flex h-10 w-[calc(50%-0.375rem)] shrink-0 items-center justify-center rounded-md border border-white/40 bg-sky-950 px-3 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-9 sm:w-auto"
       >
         จัดการข้อมูล
       </Link>

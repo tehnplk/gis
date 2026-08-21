@@ -162,7 +162,7 @@ export default function AccidentMap({
   focus: FocusRequest | null;
 }) {
   const [activeId, setActiveId] = useState(BASE_MAPS[0].id);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   // เปิดเฉพาะชั้นข้อมูลหลักตอนโหลด ชั้นอื่นให้ผู้ใช้เปิดเองจากแผงควบคุม
   const [showAccidents, setShowAccidents] = useState(true);
   const [showRescue, setShowRescue] = useState(false);
@@ -174,6 +174,16 @@ export default function AccidentMap({
   const [hiddenTriage, setHiddenTriage] = useState<Set<string>>(() => new Set());
   const [drunkOnly, setDrunkOnly] = useState(false);
   const markerRefs = useRef<MarkerRefs>(new Map());
+
+  // Keep the desktop panel open, but collapse it whenever the layout is mobile.
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 640px)");
+    const syncPanelToViewport = () => setPanelOpen(desktopQuery.matches);
+
+    syncPanelToViewport();
+    desktopQuery.addEventListener("change", syncPanelToViewport);
+    return () => desktopQuery.removeEventListener("change", syncPanelToViewport);
+  }, []);
 
   const active = useMemo(
     () => BASE_MAPS.find((m) => m.id === activeId) ?? BASE_MAPS[0],
@@ -397,16 +407,16 @@ export default function AccidentMap({
       )}
 
       {/* แผงควบคุม วางนอก MapContainer เพื่อไม่ให้ event ตกไปที่แผนที่ */}
-      <div className="pointer-events-none absolute right-3 top-3 z-[1000] flex max-h-[calc(100%-1.5rem)] flex-col items-end gap-2 overflow-y-auto">
+      <div className="pointer-events-none absolute inset-x-2 top-2 z-[1000] flex max-h-[calc(100%-1rem)] flex-col items-stretch gap-2 overflow-y-auto sm:inset-x-auto sm:right-3 sm:top-3 sm:max-h-[calc(100%-1.5rem)] sm:items-end">
         {/* แถวบน — สลับแผนที่ฐาน (อิสระ ไม่ยุบตามแผง) อยู่แถวเดียวกับปุ่มเปิด/ปิดแผง */}
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <BasemapSwitch activeId={active.id} onChange={setActiveId} />
 
           <button
             type="button"
             onClick={() => setPanelOpen((open) => !open)}
             aria-expanded={panelOpen}
-            className="pointer-events-auto rounded-lg border border-black/15 bg-white px-3 py-1.5 text-sm font-medium shadow-md hover:bg-neutral-100 dark:border-white/20 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+            className="pointer-events-auto shrink-0 rounded-lg border border-black/15 bg-white px-2.5 py-2 text-sm font-medium whitespace-nowrap shadow-md hover:bg-neutral-100 sm:px-3 sm:py-1.5 dark:border-white/20 dark:bg-neutral-900 dark:hover:bg-neutral-800"
           >
             {panelOpen ? "ซ่อนแผงควบคุม ✕" : "ชั้นข้อมูล ☰"}
           </button>

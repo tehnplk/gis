@@ -18,8 +18,8 @@ export function PageHeading({
   count?: number;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="max-w-3xl">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-6">
+      <div className="min-w-0 max-w-3xl">
         <p className="text-xs font-semibold tracking-[0.14em] text-sky-700 uppercase">
           {eyebrow}
         </p>
@@ -27,7 +27,7 @@ export function PageHeading({
         <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
       </div>
       {typeof count === "number" && (
-        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-right">
+        <div className="w-full rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-left sm:w-auto sm:text-right">
           <p className="text-2xl font-semibold tabular-nums text-sky-900">{count}</p>
           <p className="text-xs text-sky-700">รายการทั้งหมด</p>
         </div>

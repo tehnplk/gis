@@ -40,7 +40,7 @@ export default async function UploadPage({ searchParams }: { searchParams: Searc
       <StatusNotice success={first(params.success)} error={first(params.error)} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.8fr)]">
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <h3 className="text-lg font-semibold text-slate-950">เลือกไฟล์ XLSX</h3>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             สูงสุด 8 MB หรือ 5,000 แถว หากพบข้อมูลผิด ระบบจะไม่บันทึกทั้งไฟล์
@@ -60,7 +60,7 @@ export default async function UploadPage({ searchParams }: { searchParams: Searc
             <h3 className="font-semibold text-slate-950">รูปแบบคอลัมน์</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-2xl text-left text-sm">
               <thead className="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase">
                 <tr>
                   <th className="px-4 py-3 font-semibold">คอลัมน์</th>

@@ -93,7 +93,7 @@ export function RiskCrud({ rows }: { rows: RiskManagementRow[] }) {
           <button
             type="button"
             onClick={() => setModal({ mode: "create" })}
-            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md bg-sky-800 px-4 text-sm font-semibold text-white transition-colors hover:bg-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2"
+            className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-sky-800 px-4 text-sm font-semibold text-white transition-colors hover:bg-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 sm:w-auto"
           >
             <span aria-hidden className="text-lg leading-none">+</span>
             เพิ่มจุดเสี่ยง

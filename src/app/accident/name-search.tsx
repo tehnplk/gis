@@ -71,7 +71,7 @@ export default function NameSearch({ points, onSelect }: Props) {
   const showList = open && query.trim().length > 0;
 
   return (
-    <div ref={containerRef} className="relative flex items-center">
+    <div ref={containerRef} className="relative flex w-full items-center sm:w-auto">
       {/* ไอคอนแว่นขยายวางทับในช่อง จึงต้องเผื่อ padding ซ้ายให้ข้อความ */}
       <svg
         aria-hidden
@@ -110,14 +110,14 @@ export default function NameSearch({ points, onSelect }: Props) {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        className={`${CONTROL_CLASS} w-56 pl-8`}
+        className={`${CONTROL_CLASS} w-full min-w-0 pl-8 sm:w-56`}
       />
 
       {showList && (
         <ul
           id={listId}
           role="listbox"
-          className="absolute top-full left-0 z-[1100] mt-1 max-h-72 w-72 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+          className="absolute top-full left-0 z-[1100] mt-1 max-h-72 w-full overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg sm:w-72 dark:border-slate-700 dark:bg-slate-900"
         >
           {suggestions.length === 0 && (
             <li className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">

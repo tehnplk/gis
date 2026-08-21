@@ -54,7 +54,7 @@ export default async function AccidentPage({
   ]);
 
   return (
-    <main className="flex flex-1 flex-col">
+    <main className="flex h-dvh min-h-0 flex-1 flex-col overflow-hidden">
       <AccidentView
         points={points}
         rescueBases={rescueBases}

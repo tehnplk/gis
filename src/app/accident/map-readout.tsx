@@ -25,10 +25,10 @@ export default function MapReadout() {
 
   return (
     // pointer-events-none เพื่อไม่ให้แย่งการลาก/ซูมของแผนที่
-    <div className="pointer-events-none absolute bottom-7 left-2 z-[800] rounded-md border border-black/15 bg-white/95 px-2 py-1 font-mono text-[11px] leading-tight text-neutral-900 shadow-sm">
+    <div className="pointer-events-none absolute bottom-7 left-2 z-[800] max-w-[calc(100%-1rem)] truncate rounded-md border border-black/15 bg-white/95 px-2 py-1 font-mono text-[11px] leading-tight text-neutral-900 shadow-sm">
       <span>Zoom : {zoom ?? map.getZoom()}</span>
-      <span className="mx-1.5 text-neutral-400">,</span>
-      <span>
+      <span className="mx-1.5 hidden text-neutral-400 sm:inline">,</span>
+      <span className="hidden sm:inline">
         Point{" "}
         {cursor
           ? `${cursor.lat.toFixed(5)} , ${cursor.lng.toFixed(5)}`
