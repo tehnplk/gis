@@ -17,7 +17,7 @@ export default function BasemapSwitch({
     <div
       role="tablist"
       aria-label="เลือกแผนที่ฐาน"
-      className="flex overflow-hidden rounded-lg border border-black/15 bg-white shadow-md dark:border-white/20 dark:bg-neutral-900"
+      className="pointer-events-auto flex overflow-hidden rounded-lg border border-black/15 bg-white shadow-md dark:border-white/20 dark:bg-neutral-900"
     >
       {BASE_MAPS.map((map) => {
         const selected = map.id === activeId;

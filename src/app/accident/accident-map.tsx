@@ -397,7 +397,7 @@ export default function AccidentMap({
       )}
 
       {/* แผงควบคุม วางนอก MapContainer เพื่อไม่ให้ event ตกไปที่แผนที่ */}
-      <div className="absolute right-3 top-3 z-[1000] flex max-h-[calc(100%-1.5rem)] flex-col items-end gap-2 overflow-y-auto">
+      <div className="pointer-events-none absolute right-3 top-3 z-[1000] flex max-h-[calc(100%-1.5rem)] flex-col items-end gap-2 overflow-y-auto">
         {/* แถวบน — สลับแผนที่ฐาน (อิสระ ไม่ยุบตามแผง) อยู่แถวเดียวกับปุ่มเปิด/ปิดแผง */}
         <div className="flex items-center gap-2">
           <BasemapSwitch activeId={active.id} onChange={setActiveId} />
@@ -406,7 +406,7 @@ export default function AccidentMap({
             type="button"
             onClick={() => setPanelOpen((open) => !open)}
             aria-expanded={panelOpen}
-            className="rounded-lg border border-black/15 bg-white px-3 py-1.5 text-sm font-medium shadow-md hover:bg-black/5 dark:border-white/20 dark:bg-neutral-900 dark:hover:bg-white/10"
+            className="pointer-events-auto rounded-lg border border-black/15 bg-white px-3 py-1.5 text-sm font-medium shadow-md hover:bg-neutral-100 dark:border-white/20 dark:bg-neutral-900 dark:hover:bg-neutral-800"
           >
             {panelOpen ? "ซ่อนแผงควบคุม ✕" : "ชั้นข้อมูล ☰"}
           </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import type { AccidentPoint } from "./accident-data";
@@ -170,6 +171,13 @@ export default function AccidentToolbar({
           {totalCount} จุด
         </span>
       </div>
+
+      <Link
+        href="/accident/upload"
+        className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-white/40 bg-sky-950 px-3 text-sm font-medium text-white transition-colors hover:bg-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+      >
+        จัดการข้อมูล
+      </Link>
     </header>
   );
 }
