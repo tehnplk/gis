@@ -253,7 +253,7 @@ export async function importAccidents(formData: FormData) {
     if (upload.size > MAX_FILE_SIZE) throw new Error("ไฟล์มีขนาดเกิน 8 MB");
 
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(Buffer.from(await upload.arrayBuffer()));
+    await workbook.xlsx.load(await upload.arrayBuffer());
     const worksheet = workbook.worksheets[0];
     if (!worksheet) throw new Error("ไม่พบ worksheet ในไฟล์");
 
