@@ -1,0 +1,104 @@
+import { AuthError } from "next-auth";
+import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
+import { NextResponse, type NextRequest } from "next/server";
+import { signIn } from "@/auth";
+import { signProviderProfile } from "@/lib/provider-auth";
+
+const DEFAULT_CALLBACK_URL = "/accident/upload";
+
+function loginErrorUrl(request: NextRequest, error: string) {
+  const url = new URL("/login", request.nextUrl);
+  url.searchParams.set("error", error);
+  return url;
+}
+
+/**
+ * ปลายทาง OAuth ของ Health ID — แลก code เป็น profile แล้วเข้าสู่ระบบให้
+ *
+ * ต้องยิง 3 ต่อ เพราะ Health ID กับ Provider ID เป็นคนละระบบ:
+ *   1. moph.id.th/token          — code -> Health ID access token
+ *   2. provider.id.th/token      — Health ID token -> Provider ID token
+ *   3. provider.id.th/profile    — Provider ID token -> ข้อมูลผู้ประกอบวิชาชีพ
+ */
+export async function GET(request: NextRequest) {
+  const code = request.nextUrl.searchParams.get("code");
+  if (!code) {
+    return NextResponse.redirect(loginErrorUrl(request, "provider_missing_code"));
+  }
+
+  // callbackUrl ฝากไว้ใน cookie ตอนกดปุ่ม เพราะ OAuth พากลับมาที่ URL นี้เสมอ
+  const cookieStore = await cookies();
+  const callbackUrl =
+    cookieStore.get("provider_callback_url")?.value || DEFAULT_CALLBACK_URL;
+  cookieStore.delete("provider_callback_url");
+
+  try {
+    const tokenResponse = await fetch("https://moph.id.th/api/v1/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: process.env.HEALTH_REDIRECT_URI,
+        client_id: process.env.HEALTH_CLIENT_ID,
+        client_secret: process.env.HEALTH_CLIENT_SECRET,
+      }),
+      cache: "no-store",
+    });
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok || !tokenData?.data?.access_token) {
+      throw new Error("health_token_failed");
+    }
+
+    const providerTokenResponse = await fetch(
+      "https://provider.id.th/api/v1/services/token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: process.env.PROVIDER_CLIENT_ID,
+          secret_key: process.env.PROVIDER_CLIENT_SECRET,
+          token_by: "Health ID",
+          token: tokenData.data.access_token,
+        }),
+        cache: "no-store",
+      },
+    );
+    const providerTokenData = await providerTokenResponse.json();
+    if (!providerTokenResponse.ok || !providerTokenData?.data?.access_token) {
+      throw new Error("provider_token_failed");
+    }
+
+    const profileResponse = await fetch(
+      "https://provider.id.th/api/v1/services/profile?position_type=1",
+      {
+        headers: {
+          "client-id": process.env.PROVIDER_CLIENT_ID ?? "",
+          "secret-key": process.env.PROVIDER_CLIENT_SECRET ?? "",
+          Authorization: `Bearer ${providerTokenData.data.access_token}`,
+        },
+        cache: "no-store",
+      },
+    );
+    const profileData = await profileResponse.json();
+    if (!profileResponse.ok || !profileData?.data) {
+      throw new Error("provider_profile_failed");
+    }
+
+    const profile = JSON.stringify(profileData.data);
+    return await signIn("credentials", {
+      loginType: "provider-id",
+      profile,
+      signature: signProviderProfile(profile),
+      redirectTo: callbackUrl,
+    });
+  } catch (error) {
+    // signIn โยน NEXT_REDIRECT ออกมาตอนสำเร็จ ต้องปล่อยผ่านก่อนเสมอ
+    unstable_rethrow(error);
+    if (error instanceof AuthError) {
+      return NextResponse.redirect(loginErrorUrl(request, "provider_not_allowed"));
+    }
+    return NextResponse.redirect(loginErrorUrl(request, "provider_failed"));
+  }
+}

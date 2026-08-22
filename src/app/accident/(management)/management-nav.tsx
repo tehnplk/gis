@@ -7,14 +7,19 @@ const ITEMS = [
   { href: "/accident/upload", label: "นำเข้าข้อมูล" },
   { href: "/accident/risk", label: "จัดการจุดเสี่ยง" },
   { href: "/accident/rescue", label: "จัดการจุดรถกู้ชีพ" },
+  // เฉพาะ super เท่านั้น proxy.ts กันไว้อีกชั้นแล้ว
+  { href: "/manage-user", label: "จัดการผู้ใช้", superOnly: true },
 ] as const;
 
-export default function ManagementNav() {
+export default function ManagementNav({ role }: { role?: string }) {
   const pathname = usePathname();
+  const items = ITEMS.filter(
+    (item) => !("superOnly" in item && item.superOnly) || role === "super",
+  );
 
   return (
     <nav aria-label="เมนูจัดการข้อมูล" className="flex flex-wrap gap-1.5">
-      {ITEMS.map((item) => {
+      {items.map((item) => {
         const active = pathname === item.href;
 
         return (

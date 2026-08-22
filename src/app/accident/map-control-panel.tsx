@@ -27,7 +27,7 @@ type Props = {
   onToggleDrunkOnly: (value: boolean) => void;
   drunkCount: number;
 
-  /** จุดรถกู้ภัย */
+  /** จุดรถกู้ชีพ */
   showRescue: boolean;
   onToggleRescue: () => void;
   rescueCount: number;
@@ -255,7 +255,7 @@ export default function MapControlPanel(props: Props) {
               showHeatmap ? "" : "opacity-55"
             }`}
           >
-            ความหนาแน่นของจุดเกิดเหตุที่แสดงอยู่ — เบาบาง → หนาแน่น
+            ความหนาแน่นของจุดเกิดเหตุ — เบาบาง → หนาแน่น (แสดงได้แม้ปิดชั้นหมุด)
           </p>
         </section>
 
@@ -267,7 +267,7 @@ export default function MapControlPanel(props: Props) {
             onToggle={onToggleRisk}
             color={RISK_COLOR}
             shape="diamond"
-            label="จุดเสี่ยง"
+            label="จุดเสี่ยงอุบัติเหตุทางถนน"
             count={riskCount}
           />
         </section>
@@ -280,7 +280,7 @@ export default function MapControlPanel(props: Props) {
             onToggle={onToggleRescue}
             color={RESCUE_COLOR}
             shape="square"
-            label="จุดรถกู้ภัย"
+            label="จุดรถกู้ชีพ"
             count={rescueCount}
           />
 

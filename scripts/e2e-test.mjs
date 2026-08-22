@@ -5,6 +5,8 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const BASE_URL = process.env.TEST_URL || "http://localhost:3000";
+const USERNAME = process.env.TEST_USER || "admin";
+const PASSWORD = process.env.TEST_PASSWORD || "112233";
 const SCREENSHOT_DIR = path.resolve(".playwright-cli/e2e-screenshots");
 
 async function main() {
@@ -42,6 +44,49 @@ async function main() {
   }
 
   try {
+    // 0. Authentication — ทั้งเว็บถูกกันด้วย proxy.ts ต้อง login ก่อนถึงจะทดสอบอย่างอื่นได้
+    await testStep("0a. Protected page redirects to /login when signed out", async () => {
+      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      const url = new URL(page.url());
+      if (url.pathname !== "/login") {
+        throw new Error("Expected /login, got " + page.url());
+      }
+      if (url.searchParams.get("callbackUrl") !== "/accident") {
+        throw new Error("callbackUrl not preserved: " + page.url());
+      }
+    });
+
+    await testStep("0b. Protected API returns 401 JSON when signed out", async () => {
+      const response = await page.request.get(BASE_URL + "/api/boundaries/district");
+      if (response.status() !== 401) {
+        throw new Error("Expected 401, got " + response.status());
+      }
+      const data = await response.json();
+      if (!data.message) throw new Error("Expected JSON body with message");
+    });
+
+    await testStep("0c. Wrong password is rejected", async () => {
+      await page.getByRole("textbox", { name: "ชื่อผู้ใช้" }).fill(USERNAME);
+      await page.getByRole("textbox", { name: "รหัสผ่าน" }).fill("wrong-password");
+      await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
+      await page.waitForURL(/error=1/, { timeout: 10000 });
+
+      // Next.js มี route announcer ที่เป็น role="alert" เหมือนกัน ต้องเจาะจงเฉพาะกล่องข้อความ
+      const alert = await page.locator('p[role="alert"]').textContent();
+      if (!alert?.includes("ไม่ถูกต้อง")) {
+        throw new Error("Expected invalid-credentials alert, got " + alert);
+      }
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, "00_login_error.png") });
+    });
+
+    await testStep("0d. Correct password signs in and honours callbackUrl", async () => {
+      await page.getByRole("textbox", { name: "ชื่อผู้ใช้" }).fill(USERNAME);
+      await page.getByRole("textbox", { name: "รหัสผ่าน" }).fill(PASSWORD);
+      await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
+      await page.waitForURL(BASE_URL + "/accident", { timeout: 15000 });
+      await page.waitForSelector(".leaflet-container", { timeout: 15000 });
+    });
+
     // 1. Navigation and Initial Map Load
     await testStep("1. Home route (/) redirects to /accident", async () => {
       await page.goto(BASE_URL + "/", { waitUntil: "networkidle" });
@@ -53,16 +98,16 @@ async function main() {
 
     await testStep("2. Map Page Title & Header verification", async () => {
       const title = await page.title();
-      if (!title.includes("แผนที่จุดเกิดอุบัติเหตุทางถนน")) {
+      if (!title.includes("EMS - GIS")) {
         throw new Error("Unexpected page title: " + title);
       }
 
       const heading = await page.locator("h1").textContent();
-      if (!heading?.includes("แผนที่จุดเกิดอุบัติเหตุทางถนน")) {
+      if (!heading?.includes("EMS - GIS")) {
         throw new Error("Unexpected h1 content: " + heading);
       }
 
-      const subtitle = await page.getByText("สำนักงานสาธารณสุขจังหวัดพิษณุโลก").isVisible();
+      const subtitle = await page.getByText("สสจ.พิษณุโลก").isVisible();
       if (!subtitle) {
         throw new Error("Subtitle not visible");
       }
@@ -72,7 +117,7 @@ async function main() {
     });
 
     await testStep("3. Initial Points Counter verification", async () => {
-      const counterEl = page.locator("text=/\\d+\\s*\\/\\s*\\d+\\s*จุด/");
+      const counterEl = page.locator("text=/\\d+\\s*\\/\\s*\\d+\\s*เคส/");
       const counterText = await counterEl.textContent();
       if (!counterText) {
         throw new Error("Points counter not found");
@@ -82,12 +127,12 @@ async function main() {
 
     // 2. Map Filtering & Controls
     await testStep("4. District selector filtering (เมืองพิษณุโลก)", async () => {
-      const districtSelect = page.locator("select").first();
+      const districtSelect = page.locator('select[aria-label="อำเภอ"]');
       await districtSelect.selectOption({ label: "เมืองพิษณุโลก" });
       await page.waitForURL(/district=/, { timeout: 5000 });
       await page.waitForTimeout(600);
 
-      const counterAfter = await page.locator("text=/\\d+\\s*\\/\\s*\\d+\\s*จุด/").textContent();
+      const counterAfter = await page.locator("text=/\\d+\\s*\\/\\s*\\d+\\s*เคส/").textContent();
       console.log("(Filtered count: " + counterAfter?.trim() + ")");
       await page.screenshot({ path: path.join(SCREENSHOT_DIR, "02_district_filter.png") });
 
@@ -140,9 +185,9 @@ async function main() {
       }
     });
 
-    await testStep("8. Resource layers toggle (จุดเสี่ยง & จุดรถกู้ภัย)", async () => {
+    await testStep("8. Resource layers toggle (จุดเสี่ยง & จุดรถกู้ชีพ)", async () => {
       const riskCb = page.locator("label:has-text('จุดเสี่ยง') input[type=checkbox]").first();
-      const rescueCb = page.locator("label:has-text('จุดรถกู้ภัย') input[type=checkbox]").first();
+      const rescueCb = page.locator("label:has-text('จุดรถกู้ชีพ') input[type=checkbox]").first();
 
       if (await riskCb.isVisible()) await riskCb.check();
       if (await rescueCb.isVisible()) await rescueCb.check();
@@ -385,6 +430,45 @@ async function main() {
         throw new Error("Invalid GeoJSON FeatureCollection response for subdistricts");
       }
       console.log("(Found " + data.features.length + " subdistrict features)");
+    });
+
+
+    // 4. Auth surfaces added after login was introduced
+    await testStep("22. Avatar dropdown menu on the map page", async () => {
+      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      await page.getByRole("button", { name: "บัญชีผู้ใช้" }).click();
+
+      const menu = page.getByRole("menu");
+      await menu.waitFor({ state: "visible", timeout: 5000 });
+      for (const label of ["จัดการข้อมูล", "จัดการผู้ใช้", "ออกจากระบบ"]) {
+        if (!(await menu.getByText(label, { exact: true }).isVisible())) {
+          throw new Error("Menu item missing: " + label);
+        }
+      }
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, "22_avatar_menu.png") });
+    });
+
+    await testStep("23. Super user reaches /manage-user", async () => {
+      await page.getByRole("menuitem", { name: "จัดการผู้ใช้" }).click();
+      await page.waitForURL(BASE_URL + "/manage-user", { timeout: 10000 });
+
+      const heading = await page.locator("h2").first().textContent();
+      if (!heading?.includes("จัดการผู้ใช้")) {
+        throw new Error("Unexpected heading: " + heading);
+      }
+      await page.screenshot({ path: path.join(SCREENSHOT_DIR, "23_manage_user.png") });
+    });
+
+    await testStep("24. Sign out clears the session", async () => {
+      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      await page.getByRole("button", { name: "บัญชีผู้ใช้" }).click();
+      await page.getByRole("menuitem", { name: "ออกจากระบบ" }).click();
+      await page.waitForURL(/\/login/, { timeout: 15000 });
+
+      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      if (!page.url().includes("/login")) {
+        throw new Error("Session still active after sign out: " + page.url());
+      }
     });
 
   } finally {

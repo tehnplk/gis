@@ -1,12 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import type { AccidentPoint } from "./accident-data";
 import { ALL_CBD, DEFAULT_CBD, type CbdOption } from "./cbd";
 import HnSearch from "./hn-search";
+import UserMenu from "./user-menu";
 
 type Props = {
   /** จุดที่แสดงอยู่ตอนนี้ ใช้เป็นตัวเลือกของ autocomplete */
@@ -15,6 +15,8 @@ type Props = {
   districts: string[];
   /** ประเภทเหตุที่มีข้อมูลจริง เรียงจากพบมากไปน้อย */
   cbdOptions: CbdOption[];
+  /** ผู้ใช้ที่เข้าสู่ระบบอยู่ ใช้แสดงอวาตาร์และเมนูบัญชี */
+  user: { name: string; role?: string } | null;
   /** ช่วงวันที่ของข้อมูลทั้งหมด ใช้จำกัดขอบเขตของ input */
   dateBounds: { min: string | null; max: string | null };
   resultCount: number;
@@ -40,6 +42,7 @@ export default function AccidentToolbar({
   onSelectPoint,
   districts,
   cbdOptions,
+  user,
   dateBounds,
   resultCount,
   totalCount,
@@ -179,26 +182,24 @@ export default function AccidentToolbar({
         </button>
       )}
 
-      {/* ตัวเลขผลลัพธ์ */}
-      <div
-        aria-live="polite"
-        className={`flex h-10 w-[calc(50%-0.375rem)] items-center justify-center rounded-md bg-white/15 px-2.5 text-sm tabular-nums transition-opacity sm:ml-auto sm:h-auto sm:w-auto sm:py-1.5 ${
-          isPending ? "opacity-50" : ""
-        }`}
-      >
-        <span className="font-semibold text-white">{resultCount}</span>
-        <span className="text-sky-100">
-          {" / "}
-          {totalCount} เคส
-        </span>
-      </div>
+      {/* ตัวเลขผลลัพธ์กับอวาตาร์อยู่กลุ่มเดียวกัน ไม่งั้นเวลา header ขึ้นบรรทัดใหม่
+          อวาตาร์จะหลุดไปอยู่คนละแถวกับตัวเลข ดูเหมือนหลงมาจากที่อื่น */}
+      <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+        <div
+          aria-live="polite"
+          className={`flex h-10 flex-1 items-center justify-center rounded-md bg-white/15 px-2.5 text-sm whitespace-nowrap tabular-nums transition-opacity sm:h-auto sm:flex-none sm:py-1.5 ${
+            isPending ? "opacity-50" : ""
+          }`}
+        >
+          <span className="font-semibold text-white">{resultCount}</span>
+          <span className="text-sky-100">
+            {" / "}
+            {totalCount} เคส
+          </span>
+        </div>
 
-      <Link
-        href="/accident/upload"
-        className="inline-flex h-10 w-[calc(50%-0.375rem)] shrink-0 items-center justify-center rounded-md border border-white/40 bg-sky-950 px-3 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:h-9 sm:w-auto"
-      >
-        จัดการข้อมูล
-      </Link>
+        {user && <UserMenu name={user.name} role={user.role} />}
+      </div>
     </header>
   );
 }

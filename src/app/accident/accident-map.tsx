@@ -457,6 +457,20 @@ export default function AccidentMap({
   );
 
   /**
+   * ความชุกเป็นชั้นข้อมูลอิสระจากชั้นหมุด ปิดหมุดแล้วยังต้องดูความหนาแน่นได้
+   * ปิดชั้นหมุด = ปลดติ๊กระดับคัดแยกทั้งหมด visiblePoints จึงว่าง
+   * ถ้าใช้ชุดนั้นตรงๆ heatmap จะหายไปด้วย จึงถอยไปใช้ข้อมูลทั้งหมดแทน
+   * (ยังเคารพตัวกรอง "เฉพาะที่ดื่มสุรา" เพราะเป็นตัวกรองของผู้ใช้เอง ไม่ใช่สวิตช์ชั้นข้อมูล)
+   */
+  const heatmapPoints = useMemo(
+    () =>
+      showAccidents
+        ? visiblePoints
+        : points.filter((p) => !drunkOnly || p.drunk === true),
+    [showAccidents, visiblePoints, points, drunkOnly],
+  );
+
+  /**
    * ยุบจุดที่พิกัดตรงกันเป็นหมุดเดียว คิดใหม่ทุกครั้งที่ตัวกรองเปลี่ยน
    * ตัวเลขในหมุดจึงเป็นจำนวนเหตุ "หลังกรอง" เสมอ ไม่ใช่ยอดดิบ
    */
@@ -639,7 +653,7 @@ export default function AccidentMap({
             </Marker>
           ))}
 
-        <HeatmapLayer points={visiblePoints} visible={showHeatmap} />
+        <HeatmapLayer points={heatmapPoints} visible={showHeatmap} />
 
         <DistrictFocus
           provinceExtent={districtExtent}

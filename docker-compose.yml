@@ -37,7 +37,18 @@ services:
       target: runner
     container_name: gis-webapp
     restart: unless-stopped
+    # อิมเมจไม่ได้ copy ไฟล์ .env เข้าไป จึงต้องป้อนผ่าน compose
+    # อ่านตามลำดับ ตัวหลังทับตัวหน้า -> HEALTH_REDIRECT_URI ของ production ชนะ
+    env_file:
+      # .env เก็บ AUTH_SECRET กับรหัสผู้ดูแล ขาดไม่ได้ ปล่อยให้ error ตั้งแต่ตอน config
+      - path: .env
+        required: true
+      # .env.production เป็นแค่ตัวทับค่าเฉพาะ production ไม่มีก็รันได้ (ใช้ค่าจาก .env)
+      - path: .env.production
+        required: false
     environment:
+      # environment มีลำดับสูงกว่า env_file เสมอ DATABASE_URL จึงชี้ไป postgis
+      # ไม่ถูกทับด้วยค่า localhost ที่อยู่ใน .env ของเครื่อง dev
       DATABASE_URL: postgresql://${POSTGRES_USER:-gis}:${POSTGRES_PASSWORD:-gis_password}@postgis:5432/${POSTGRES_DB:-gis}
     ports:
       - "3017:3000"

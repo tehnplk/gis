@@ -20,7 +20,8 @@ export async function GET(
   const featureCollection = await getBoundaryGeoJson(level as BoundaryLevel);
 
   return NextResponse.json(featureCollection, {
-    // ขอบเขตการปกครองแทบไม่เปลี่ยน แคชได้ยาว
-    headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400" },
+    // ขอบเขตการปกครองแทบไม่เปลี่ยน แคชได้ยาว แต่ต้องเป็น private
+    // เพราะ route นี้ต้องเข้าสู่ระบบก่อน ห้ามให้ proxy กลางแคชแล้วแจกให้คนที่ยังไม่ login
+    headers: { "Cache-Control": "private, max-age=3600" },
   });
 }

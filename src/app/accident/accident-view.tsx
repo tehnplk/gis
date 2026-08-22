@@ -23,6 +23,7 @@ type Props = {
   selectedDistrict: string | null;
   districts: string[];
   cbdOptions: CbdOption[];
+  user: { name: string; role?: string } | null;
   dateBounds: { min: string | null; max: string | null };
   totalCount: number;
 };
@@ -36,6 +37,7 @@ export default function AccidentView({
   selectedDistrict,
   districts,
   cbdOptions,
+  user,
   dateBounds,
   totalCount,
 }: Props) {
@@ -54,6 +56,7 @@ export default function AccidentView({
           onSelectPoint={handleSelectPoint}
           districts={districts}
           cbdOptions={cbdOptions}
+          user={user}
           dateBounds={dateBounds}
           resultCount={points.length}
           totalCount={totalCount}
