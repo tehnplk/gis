@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useState } from "react";
 import type { AccidentPoint } from "./accident-data";
+import type { CbdOption } from "./cbd";
 import AccidentToolbar from "./accident-toolbar";
 import type { BoundsTuple } from "./boundary-data";
 import MapLoader from "./map-loader";
@@ -21,6 +22,7 @@ type Props = {
   districtBounds: Record<string, BoundsTuple>;
   selectedDistrict: string | null;
   districts: string[];
+  cbdOptions: CbdOption[];
   dateBounds: { min: string | null; max: string | null };
   totalCount: number;
 };
@@ -33,6 +35,7 @@ export default function AccidentView({
   districtBounds,
   selectedDistrict,
   districts,
+  cbdOptions,
   dateBounds,
   totalCount,
 }: Props) {
@@ -50,6 +53,7 @@ export default function AccidentView({
           points={points}
           onSelectPoint={handleSelectPoint}
           districts={districts}
+          cbdOptions={cbdOptions}
           dateBounds={dateBounds}
           resultCount={points.length}
           totalCount={totalCount}

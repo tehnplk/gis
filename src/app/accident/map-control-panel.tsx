@@ -16,6 +16,8 @@ type Props = {
   onToggleAccidents: () => void;
   accidentCount: number;
   visibleAccidentCount: number;
+  /** จำนวนหมุด = จำนวนพิกัดที่ไม่ซ้ำ ซึ่งน้อยกว่าจำนวนเหตุมาก */
+  clusterCount: number;
   triageRows: (TriageLevel | null)[];
   countByTriage: Map<string, number>;
   isTriageHidden: (triage: TriageLevel | null) => boolean;
@@ -137,6 +139,7 @@ export default function MapControlPanel(props: Props) {
     onToggleAccidents,
     accidentCount,
     visibleAccidentCount,
+    clusterCount,
     triageRows,
     countByTriage,
     isTriageHidden,
@@ -176,10 +179,13 @@ export default function MapControlPanel(props: Props) {
           />
 
           <div
-            className={`mt-1.5 space-y-1 border-l border-black/10 pl-2.5 dark:border-white/15 ${
-              showAccidents ? "" : "pointer-events-none opacity-55"
-            }`}
+            className="mt-1.5 space-y-1 border-l border-black/10 pl-2.5 dark:border-white/15"
           >
+            <p className="flex justify-between text-[11px] text-foreground/70">
+              <span>หมุดบนแผนที่</span>
+              <span className="tabular-nums">{clusterCount}</span>
+            </p>
+
             <p className="flex justify-between text-[11px] text-foreground/70">
               <span>ระดับคัดแยก</span>
               <span className="tabular-nums">

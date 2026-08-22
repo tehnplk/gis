@@ -3,17 +3,26 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AccidentPoint } from "./accident-data";
 import { CONTROL_CLASS } from "./accident-toolbar";
-import { patientName } from "./format";
 import { triageColor } from "./triage";
 
 const MAX_SUGGESTIONS = 8;
+
+/** วันที่แบบสั้นในรายการผลค้นหา ไม่ต้องละเอียดถึงวินาที */
+const DATE_FORMAT = new Intl.DateTimeFormat("th-TH", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Bangkok",
+});
 
 type Props = {
   points: AccidentPoint[];
   onSelect: (point: AccidentPoint) => void;
 };
 
-export default function NameSearch({ points, onSelect }: Props) {
+export default function HnSearch({ points, onSelect }: Props) {
   const listId = useId();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -24,9 +33,17 @@ export default function NameSearch({ points, onSelect }: Props) {
     const needle = query.trim().toLowerCase();
     if (!needle) return [];
 
-    return points
-      .filter((point) => patientName(point).toLowerCase().includes(needle))
-      .slice(0, MAX_SUGGESTIONS);
+    const matched: { point: AccidentPoint; exactPrefix: boolean }[] = [];
+    for (const point of points) {
+      const hn = point.hn?.toLowerCase();
+      if (!hn || !hn.includes(needle)) continue;
+      matched.push({ point, exactPrefix: hn.startsWith(needle) });
+    }
+
+    // HN ที่ขึ้นต้นตรงกับที่พิมพ์มักเป็นตัวที่ผู้ใช้ต้องการ จึงดันขึ้นก่อน
+    // ที่เหลือคงลำดับเดิม (เหตุล่าสุดก่อน) เพราะ sort ของ JS เสถียร
+    matched.sort((a, b) => Number(b.exactPrefix) - Number(a.exactPrefix));
+    return matched.slice(0, MAX_SUGGESTIONS).map((row) => row.point);
   }, [points, query]);
 
   // คลิกนอกกล่องแล้วปิดรายการ
@@ -42,7 +59,7 @@ export default function NameSearch({ points, onSelect }: Props) {
   }, [open]);
 
   const choose = (point: AccidentPoint) => {
-    setQuery(patientName(point));
+    setQuery(point.hn ?? "");
     setOpen(false);
     onSelect(point);
   };
@@ -90,7 +107,7 @@ export default function NameSearch({ points, onSelect }: Props) {
         id={`${listId}-input`}
         type="search"
         role="combobox"
-        aria-label="ค้นหาชื่อ-นามสกุล"
+        aria-label="ค้นหา HN"
         aria-expanded={showList}
         aria-controls={listId}
         aria-autocomplete="list"
@@ -100,7 +117,7 @@ export default function NameSearch({ points, onSelect }: Props) {
             : undefined
         }
         autoComplete="off"
-        placeholder="ค้นด้วยชื่อ-นามสกุล"
+        placeholder="ค้นด้วย HN"
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -121,7 +138,7 @@ export default function NameSearch({ points, onSelect }: Props) {
         >
           {suggestions.length === 0 && (
             <li className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
-              ไม่พบชื่อที่ค้นหา
+              ไม่พบ HN ที่ค้นหา
             </li>
           )}
 
@@ -147,9 +164,15 @@ export default function NameSearch({ points, onSelect }: Props) {
                 style={{ backgroundColor: triageColor(point.triage) }}
               />
               <span className="min-w-0 flex-1">
-                <span className="block truncate">{patientName(point)}</span>
+                <span className="block truncate tabular-nums">
+                  HN {point.hn}
+                </span>
                 <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
-                  {[point.district && `อ.${point.district}`, point.hn]
+                  {[
+                    DATE_FORMAT.format(new Date(point.incidentDatetime)),
+                    point.district && `อ.${point.district}`,
+                    point.place,
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </span>

@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import {
   getAccidentPoints,
+  getCbdOptions,
   getDateRange,
   getDistricts,
   getTotalCount,
 } from "./accident-data";
 import AccidentView from "./accident-view";
+import { DEFAULT_CBD } from "./cbd";
 import { getDistrictBoundsByName, getDistrictExtent } from "./boundary-data";
 import { getRescueBases, getRiskPoints } from "./resource-data";
 
 export const metadata: Metadata = {
-  title: "แผนที่จุดเกิดอุบัติเหตุทางถนน",
-  description: "สำนักงานสาธารณสุขจังหวัดพิษณุโลก",
+  title: "EMS - GIS",
+  description: "สสจ.พิษณุโลก",
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -31,6 +33,7 @@ export default async function AccidentPage({
     dateFrom: first(params.from),
     dateTo: first(params.to),
     district: first(params.district),
+    cbd: first(params.cbd) ?? DEFAULT_CBD,
   };
 
   const [
@@ -42,15 +45,17 @@ export default async function AccidentPage({
     riskPoints,
     districtExtent,
     districtBounds,
+    cbdOptions,
   ] = await Promise.all([
     getAccidentPoints(filters),
-    getTotalCount(),
-    getDistricts(),
-    getDateRange(),
+    getTotalCount(filters.cbd),
+    getDistricts(filters.cbd),
+    getDateRange(filters.cbd),
     getRescueBases(),
     getRiskPoints(),
     getDistrictExtent(),
     getDistrictBoundsByName(),
+    getCbdOptions(),
   ]);
 
   return (
@@ -63,6 +68,7 @@ export default async function AccidentPage({
         districtBounds={districtBounds}
         selectedDistrict={filters.district ?? null}
         districts={districts}
+        cbdOptions={cbdOptions}
         dateBounds={dateBounds}
         totalCount={totalCount}
       />

@@ -18,25 +18,119 @@ enum Triage {
   @@map("triage")
 }
 
+/// โครงสร้างตรงกับไฟล์ export "รายการแจ้งเหตุ" ของระบบ 1669 (88 คอลัมน์)
+/// ชื่อคอลัมน์ไทยของแต่ละฟิลด์กำกับไว้ในคอมเมนต์ท้ายบรรทัด
 model Accident {
   id                Int      @id @default(autoincrement())
-  incident_datetime DateTime @db.Timestamptz(6)
-  hn                String?  @db.VarChar(50)
+  incident_no               String? @db.VarChar(30)                    // เลขรับแจ้งเหตุ
+  op_no                     String? @db.VarChar(30)                    // เลขปฏิบัติการ
+  command_province          String?                                    // จังหวัดสั่งการ
+  command_center            String?                                    // ศูนย์สั่งการ
+  incident_datetime         DateTime @db.Timestamptz(6)                // วันที่รับแจ้งเหตุ
+  report_channel            String?                                    // ช่องทางแจ้งเหตุ
+  reporter                  String?                                    // ผู้แจ้งเหตุ
+  reporter_phone            String?                                    // เบอร์โทรติดต่อผู้แจ้งเหตุ
+  province                  String?                                    // จังหวัดเกิดเหตุ
+  district                  String? @db.VarChar(100)                   // อำเภอเกิดเหตุ
+  subdistrict               String? @db.VarChar(100)                   // ตำบลเกิดเหตุ
+  place                     String? @db.VarChar(255)                   // สถานที่เกิดเหตุ
+  cbd                       String?                                    // CBD
+  idc_code                  String?                                    // IDC Code
+  phone_triage              String?                                    // Phone Triage
+  rc_code                   String?                                    // RC Code
+  scene_triage              String?                                    // Scene Triage
+  unit_code                 String?                                    // รหัสหน่วยปฏิบัติการ
+  unit_name                 String?                                    // ชื่อหน่วยปฏิบัติการ
+  team_code                 String?                                    // รหัสชุดปฏิบัติการ
+  team_name                 String?                                    // ชื่อชุดปฏิบัติการ
+  op_type                   String?                                    // ประเภทปฏิบัติการ
+  team_level                String?                                    // ระดับชุดปฏิบัติการ
+  time_received             DateTime? @db.Timestamptz(6)               // เวลารับแจ้ง
+  time_dispatched           DateTime? @db.Timestamptz(6)               // เวลาสั่งการ
+  time_departed_base        DateTime? @db.Timestamptz(6)               // เวลาออกจากฐาน
+  time_arrived_scene        DateTime? @db.Timestamptz(6)               // เวลาถึงที่เกิดเหตุ
+  time_left_scene           DateTime? @db.Timestamptz(6)               // เวลาออกจากเหตุ
+  time_arrived_hospital     DateTime? @db.Timestamptz(6)               // เวลาถึง รพ.
+  time_returned_base        DateTime? @db.Timestamptz(6)               // เวลา ถึงฐาน
+  min_received_to_dispatch  Int?                                       // ระยะเวลา รับแจ้ง ถึง สั่งการ (นาที)
+  min_received_to_depart    Int?                                       // ระยะเวลา รับแจ้ง ถึง ออกจากฐาน (นาที)
+  min_dispatch_to_depart    Int?                                       // ระยะเวลา สั่งการ ถึง ออกจากฐาน (นาที)
+  min_received_to_scene     Int?                                       // ระยะเวลา รับแจ้ง ถึง ที่เกิดเหตุ (นาที)
+  min_scene_to_leave        Int?                                       // ระยะเวลา ที่เกิดเหตุ ถึง ออกจากเหตุ (นาที)
+  min_leave_to_hospital     Int?                                       // ระยะเวลา ออกจากเหตุ ถึง รพ. (นาที)
+  min_hospital_to_base      Int?                                       // ระยะเวลา รพ. ถึง ฐาน (นาที)
+  km_received_to_scene      Decimal? @db.Decimal(14, 3)                // ระยะทาง รับแจ้ง ถึง ที่เกิดเหตุ
+  km_leave_to_hospital      Decimal? @db.Decimal(14, 3)                // ระยะทาง ออกจากเหตุ ถึง รพ.
+  km_hospital_to_base       Decimal? @db.Decimal(14, 3)                // ระยะทาง รพ. ถึง ฐาน
+  op_result                 String?                                    // การปฏิบัติการ
+  patient_no                String? @db.VarChar(30)                    // เลขผู้ป่วย
+  age_raw                   String?                                    // อายุ (ปี/เดือน)
+  gender                    String?                                    // เพศ
+  benefit_group             String?                                    // กลุ่มผู้ใช้สิทธิการรักษา
+  passport                  String?                                    // passport
+  benefit_type              String?                                    // สิทธิการรักษา
+  other_insurance           String?                                    // ประกันอื่นๆถ้ามี
+  benefit_country           String?                                    // ประเทศในกลุ่มผู้ใช้สิทธิการรักษา
+  vehicle_type              String?                                    // ประเภทรถ
+  plate_category            String?                                    // ทะเบียนรถหมวด
+  plate_no                  String?                                    // เลขทะเบียน
+  plate_province            String?                                    // จังหวัด
+  patient_type              String?                                    // ประเภทผู้ป่วย
+  initial_care_result       String?                                    // ผลการดูแลรักษาขั้นต้น
+  hospital_code             String?                                    // นำส่ง รพ.
+  transfer_criteria         String?                                    // เกณฑ์การนำส่ง
+  summarizer_code           String?                                    // รหัสผู้ผู้สรุปรายงาน
+  summarizer_name           String?                                    // ชื่อผู้สรุปรายงาน
+  hn                        String? @db.VarChar(50)                    // HN
+  diagnosis                 String?                                    // การวินิจฉัยโรค
+  er_triage                 String?                                    // ระดับการคัดแยก (ER Triage)
+  airway                    String?                                    // ทางเดินหายใจ
+  bleeding_control          String?                                    // การห้ามเลือด
+  iv_fluid                  String?                                    // การให้สารน้ำ
+  splinting                 String?                                    // การดามกระดูก2
+  assessor                  String?                                    // ผู้ประเมิน
+  assessor_position         String?                                    // ตำแหน่งผู้ประเมิน
+  admitted                  String?                                    // Admitted
+  hospital_result           String?                                    // ผลการรักษาใน รพ.
+  recorder                  String?                                    // เจ้าหน้าที่ผู้บันทึก
+  certifier                 String?                                    // ผู้รับรอง
+  status                    String?                                    // สถานะ
+  estimated_fee             Decimal? @db.Decimal(12, 2)                // ประมาณการค่าตอบแทน
+  distance_fee              Decimal? @db.Decimal(12, 2)                // ค่าใช้จ่ายตามระยะทาง
+  consult_intake            String?                                    // ปรึกษาแพทย์อำนวยการรับแจ้งเหตุ
+  consult_intake_doctor     String?                                    // ชื่อแพทย์อำนวยการรับแจ้งเหตุ
+  consult_dispatch          String?                                    // ปรึกษาแพทย์อำนวยการสั่งการ (ใบเหลือง)
+  consult_dispatch_doctor   String?                                    // ชื่อแพทย์อำนวยการสั่งการ (ใบเหลือง)
+  consult_dispatch_note     String?                                    // รายละเอียดคำปรึกษาแพทย์สั่งการ (ใบเหลือง)
+  consult_medical           String?                                    // ปรึกษาแพทย์อำนวยการปฏิบัติการแพทย์
+  consult_medical_doctor    String?                                    // ชื่อแพทย์อำนวยปฏิบัติการแพทย์
+  consult_medical_note      String?                                    // รายละเอียดคำปรึกษาแพทย์ปฏิบัติการแพทย์
+  lat                       Decimal? @db.Decimal(9, 6)                 // ละติจูด
+  lon                       Decimal? @db.Decimal(9, 6)                 // ลองจิจูด
+  crew_doctor               String?                                    // ผู้ปฏิบัติการ (แพทย์)
+  crew_nurse                String?                                    // ผู้ปฏิบัติการ (พยาบาล)
+  crew_emt                  String?                                    // ผู้ปฏิบัติการ (ฉุกเฉินการแพทย์และอื่นๆ)
+
+  // คอลัมน์เสริมนอกไฟล์ Excel
+  place_coordinate  Unsupported("geometry(Point, 4326)")? // จุดจาก lat/lon สำหรับ PostGIS
+  triage            Triage?   // แปลงจาก er_triage/scene_triage ให้แผนที่ระบายสี
   pname             String?  @db.VarChar(50)
   fname             String?  @db.VarChar(100)
   lname             String?  @db.VarChar(100)
-  place             String?  @db.VarChar(255)
-  district          String?  @db.VarChar(100)
-  subdistrict       String?  @db.VarChar(100)
   drunk             Boolean?
-  triage            Triage?
-  place_coordinate  Unsupported("geometry(Point, 4326)")?
+  source_file       String?   // ไฟล์ต้นทาง ใช้ไล่ที่มาของข้อมูล
 
+  @@unique([op_no, patient_no, incident_datetime], map: "accident_op_patient_time_key")
   @@index([place_coordinate], type: Gist)
   @@index([incident_datetime])
+  @@index([incident_no])
   @@index([hn])
   @@index([triage])
   @@index([district])
+  @@index([subdistrict])
+  @@index([cbd])
+  @@index([status])
+  @@index([unit_name])
   @@map("accident")
 }
 

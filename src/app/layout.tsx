@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "แผนที่จุดเกิดอุบัติเหตุทางถนน",
-  description: "สำนักงานสาธารณสุขจังหวัดพิษณุโลก",
+  title: "EMS - GIS",
+  description: "สสจ.พิษณุโลก",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

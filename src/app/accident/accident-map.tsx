@@ -1,10 +1,9 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import type { CircleMarker as LeafletCircleMarker } from "leaflet";
+import type { Marker as LeafletMarker } from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  CircleMarker,
   MapContainer,
   Marker,
   Popup,
@@ -18,9 +17,10 @@ import type { FocusRequest } from "./accident-view";
 import BasemapSwitch from "./basemap-switch";
 import { BASE_MAPS } from "./basemaps";
 import BoundaryLayer from "./boundary-layer";
-import { patientName } from "./format";
 import MapControlPanel from "./map-control-panel";
 import HeatmapLayer from "./heatmap-layer";
+import { cbdCode } from "./cbd";
+import { clusterIcon } from "./cluster-icon";
 import { rescueIcon, riskIcon } from "./map-icons";
 import MapReadout from "./map-readout";
 import type { RescueBasePoint, RiskPointItem } from "./resource-data";
@@ -38,16 +38,50 @@ const DEFAULT_ZOOM = 6;
 /** ระดับซูมขั้นต่ำเมื่อ pan ไปยังจุดที่เลือกจากช่องค้นหา */
 const FOCUS_ZOOM = 15;
 
-/** รัศมีวงกลมจุดเกิดเหตุ (px) — ใหญ่กว่าไอคอนกู้ชีพ/จุดเสี่ยงเพราะเป็นชั้นข้อมูลหลัก */
-const ACCIDENT_RADIUS = 11;
-
-const DATETIME_FORMAT = new Intl.DateTimeFormat("th-TH", {
-  dateStyle: "medium",
-  timeStyle: "short",
+/** รูปแบบวันที่แบบสั้นสำหรับตารางใน popup — ต้องพอดีหนึ่งบรรทัด */
+const ROW_DATETIME_FORMAT = new Intl.DateTimeFormat("th-TH", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
   timeZone: "Asia/Bangkok",
 });
 
-type MarkerRefs = Map<number, LeafletCircleMarker>;
+type MarkerRefs = Map<number, LeafletMarker>;
+
+/** เหตุทั้งหมดที่ตกอยู่บนพิกัดเดียวกัน ยุบเป็นหมุดเดียว */
+type AccidentCluster = {
+  key: string;
+  lat: number;
+  lng: number;
+  points: AccidentPoint[];
+  triage: TriageLevel | null;
+};
+
+/**
+ * สีหมุดใช้ระดับคัดแยกที่พบมากที่สุดในพิกัดนั้น
+ * เมื่อจำนวนเท่ากันให้ระดับที่รุนแรงกว่าชนะ (TRIAGE_LEVELS เรียงจากรุนแรงไปเบา)
+ * ผลคือสีหมุดไม่แกว่งตามลำดับข้อมูลที่ query คืนมา
+ */
+function dominantTriage(points: AccidentPoint[]): TriageLevel | null {
+  const counts = new Map<string, number>();
+  for (const point of points) {
+    const key = point.triage ?? "unknown";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  let best: TriageLevel | null = null;
+  let bestCount = 0;
+  for (const level of [...TRIAGE_LEVELS, null]) {
+    const count = counts.get(level ?? "unknown") ?? 0;
+    if (count > bestCount) {
+      best = level;
+      bestCount = count;
+    }
+  }
+  return best;
+}
 
 /**
  * ชั้นวางของ Leaflet ตามค่าเริ่มต้น: overlayPane (เส้น/วงกลม) = 400, markerPane (ไอคอน) = 600
@@ -121,7 +155,13 @@ function DistrictFocus({
   return null;
 }
 
-/** เลื่อนแผนที่ไปยังจุดที่ผู้ใช้เลือกจาก autocomplete แล้วเปิด popup ให้ */
+/**
+ * เลื่อนแผนที่ไปยังจุดที่ผู้ใช้เลือกจากช่องค้น HN แล้วเปิด popup ให้
+ *
+ * ไม่ได้เล็งไปที่หมุดตรงๆ เพราะ popup สูงหลายร้อยพิกเซลและงอกขึ้นด้านบนของหมุด
+ * ถ้าวางหมุดไว้กลางจอ ตัว popup จะล้นออกนอกขอบบน จึงเลื่อนจุดกึ่งกลางแผนที่
+ * ขึ้นไปเท่ากับระยะจากหมุดถึงกึ่งกลาง popup — ผลคือ popup มาอยู่กลางจอพอดี
+ */
 function PanToFocus({
   focus,
   markerRefs,
@@ -135,13 +175,214 @@ function PanToFocus({
     if (!focus) return;
 
     const { point } = focus;
-    map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), FOCUS_ZOOM), {
-      duration: 0.8,
+    const marker = markerRefs.current.get(point.id);
+    const zoom = Math.max(map.getZoom(), FOCUS_ZOOM);
+
+    if (!marker) {
+      map.flyTo([point.lat, point.lng], zoom, { duration: 0.8 });
+      return;
+    }
+
+    marker.openPopup();
+
+    // รอหนึ่งเฟรมให้ popup วาดเสร็จก่อน ไม่งั้นวัดความสูงได้ 0
+    const frame = requestAnimationFrame(() => {
+      const center = map.project([point.lat, point.lng], zoom);
+      const markerEl = marker.getElement();
+      const popupEl = marker.getPopup()?.getElement();
+
+      if (markerEl && popupEl) {
+        const markerBox = markerEl.getBoundingClientRect();
+        const popupBox = popupEl.getBoundingClientRect();
+        // ระยะกึ่งกลางหมุด -> กึ่งกลาง popup เป็นพิกเซลของ DOM จึงคงที่ทุกระดับซูม
+        const lift =
+          markerBox.top +
+          markerBox.height / 2 -
+          (popupBox.top + popupBox.height / 2);
+        center.y -= lift;
+      }
+
+      map.flyTo(map.unproject(center, zoom), zoom, { duration: 0.8 });
     });
-    markerRefs.current.get(point.id)?.openPopup();
+
+    return () => cancelAnimationFrame(frame);
   }, [focus, map, markerRefs]);
 
   return null;
+}
+
+/** หนึ่งแท็บต่อหนึ่งระดับคัดแยกที่พบในพิกัดนั้น */
+type TriageTab = {
+  key: string;
+  level: TriageLevel | null;
+  points: AccidentPoint[];
+};
+
+/** รายละเอียดของทุกเหตุที่ตกอยู่บนพิกัดเดียวกัน แยกแท็บตามระดับคัดแยก */
+function ClusterPopup({
+  cluster,
+  focusedId,
+}: {
+  cluster: AccidentCluster;
+  /** เหตุที่ผู้ใช้เลือกจากช่องค้น HN — ใช้เปิดแท็บให้ถูกและไฮไลท์แถว */
+  focusedId: number | null;
+}) {
+  const first = cluster.points[0];
+  const total = cluster.points.length;
+  const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
+
+  /** แสดงเฉพาะระดับที่มีข้อมูลจริงในพิกัดนี้ เรียงจากรุนแรงไปเบาตาม TRIAGE_LEVELS */
+  const tabs = useMemo<TriageTab[]>(() => {
+    const levels: (TriageLevel | null)[] = [...TRIAGE_LEVELS, null];
+    return levels
+      .map((level) => ({
+        key: level ?? "unknown",
+        level,
+        points: cluster.points.filter((p) => p.triage === level),
+      }))
+      .filter((tab) => tab.points.length > 0);
+  }, [cluster]);
+
+  // เปิดที่ระดับซึ่งพบมากที่สุดก่อน เพราะเป็นตัวที่กำหนดสีหมุดอยู่แล้ว
+  const [activeKey, setActiveKey] = useState(cluster.triage ?? "unknown");
+  // ตัวกรองอาจทำให้แท็บที่เปิดค้างไว้หายไป จึงต้องถอยไปแท็บแรกเสมอ
+  const active = tabs.find((tab) => tab.key === activeKey) ?? tabs[0];
+
+  const focused = focusedId
+    ? cluster.points.find((point) => point.id === focusedId)
+    : undefined;
+
+  // เหตุที่เลือกอาจอยู่คนละแท็บกับที่เปิดค้างไว้ ต้องสลับแท็บให้เองก่อน
+  // ไม่งั้นผู้ใช้ค้น HN แล้ว popup เปิดมาที่แท็บซึ่งไม่มีแถวนั้นอยู่เลย
+  // ปรับ state ตอน render ตามแบบ "adjusting state on prop change" ของ React
+  // ทำใน useEffect ไม่ได้ เพราะจะ render แท็บผิดหนึ่งเฟรมก่อนแล้วค่อยกระตุก
+  const [syncedFocusId, setSyncedFocusId] = useState<number | null>(focusedId);
+  if (focusedId !== syncedFocusId) {
+    setSyncedFocusId(focusedId);
+    if (focused) setActiveKey(focused.triage ?? "unknown");
+  }
+
+  // เลื่อนแถวที่ไฮไลท์เข้ามาในกรอบ เพราะตารางสูงจำกัดและมักมีหลายร้อยแถว
+  useEffect(() => {
+    if (!focusedId) return;
+    rowRefs.current
+      .get(focusedId)
+      ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [focusedId, activeKey]);
+
+  const area =
+    [
+      first?.subdistrict && `ต.${first.subdistrict}`,
+      first?.district && `อ.${first.district}`,
+    ]
+      .filter(Boolean)
+      .join(" ") || "ไม่ระบุพื้นที่";
+
+  return (
+    <div className="w-max max-w-[calc(100vw-5rem)] space-y-2 text-sm">
+      <div>
+        <p className="font-semibold">{area}</p>
+        <p className="text-black/60">
+          {total.toLocaleString("th-TH")} เหตุ ณ พิกัดนี้
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-1 border-b border-black/10 pb-1.5">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveKey(tab.key)}
+            aria-pressed={tab.key === active?.key}
+            className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-xs ${
+              tab.key === active?.key
+                ? "bg-black/10 font-semibold"
+                : "hover:bg-black/5"
+            }`}
+          >
+            <span
+              aria-hidden
+              className="size-2.5 shrink-0 rounded-full border border-black/20"
+              style={{ backgroundColor: triageColor(tab.level) }}
+            />
+            <span>{triageLabel(tab.level)}</span>
+            <span className="tabular-nums text-black/50">
+              {tab.points.length.toLocaleString("th-TH")}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {active && (
+        <div className="max-h-56 overflow-y-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead className="sticky top-0 bg-white">
+              <tr className="text-left text-black/50">
+                <th className="w-6 py-1 pr-1 font-medium">#</th>
+                <th className="py-1 pr-2 font-medium whitespace-nowrap">
+                  วัน-เวลา
+                </th>
+                <th className="py-1 pr-2 font-medium">CBD</th>
+                <th className="py-1 pr-2 font-medium">สถานที่</th>
+                <th className="py-1 pr-2 font-medium">HN</th>
+                <th className="py-1 pr-2 font-medium">นำส่ง</th>
+                <th className="py-1 font-medium whitespace-nowrap">ระดับชุด</th>
+              </tr>
+            </thead>
+            <tbody>
+              {active.points.map((point, index) => (
+                <tr
+                  key={point.id}
+                  ref={(row) => {
+                    if (row) rowRefs.current.set(point.id, row);
+                    else rowRefs.current.delete(point.id);
+                  }}
+                  className={`border-t border-black/5 align-top ${
+                    point.id === focusedId
+                      ? "bg-sky-700/15 font-semibold ring-1 ring-sky-700/40"
+                      : ""
+                  }`}
+                >
+                  <td className="py-1 pr-1 tabular-nums text-black/40">
+                    {index + 1}
+                  </td>
+                  <td className="py-1 pr-2 whitespace-nowrap tabular-nums">
+                    {ROW_DATETIME_FORMAT.format(new Date(point.incidentDatetime))}
+                  </td>
+                  <td
+                    className="py-1 pr-2 tabular-nums"
+                    title={point.cbd ?? undefined}
+                  >
+                    {cbdCode(point.cbd) ?? "—"}
+                  </td>
+                  {/* คอลัมน์เดียวที่ยอมให้ตัดคำ ที่เหลือสั้นและต้องอ่านรวดเดียว */}
+                  <td
+                    className="max-w-[17rem] min-w-[7rem] py-1 pr-2 break-words"
+                    title={point.place ?? undefined}
+                  >
+                    {point.place ?? "—"}
+                  </td>
+                  <td className="py-1 pr-2 tabular-nums">{point.hn ?? "—"}</td>
+                  <td className="py-1 pr-2 tabular-nums">
+                    {point.hospital ?? "—"}
+                  </td>
+                  <td className="py-1 whitespace-nowrap">
+                    {point.teamLevel ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* บอกที่มาของพิกัดไว้ ไม่งั้นผู้ใช้จะเข้าใจว่าหมุดคือจุดเกิดเหตุจริง */}
+      <p className="border-t border-black/10 pt-2 text-xs text-black/40">
+        {cluster.lat.toFixed(5)}, {cluster.lng.toFixed(5)} — พิกัดระดับตำบล
+        ไม่ใช่ตำแหน่งที่เกิดเหตุจริง
+      </p>
+    </div>
+  );
 }
 
 export default function AccidentMap({
@@ -215,6 +456,42 @@ export default function AccidentMap({
     [points],
   );
 
+  /**
+   * ยุบจุดที่พิกัดตรงกันเป็นหมุดเดียว คิดใหม่ทุกครั้งที่ตัวกรองเปลี่ยน
+   * ตัวเลขในหมุดจึงเป็นจำนวนเหตุ "หลังกรอง" เสมอ ไม่ใช่ยอดดิบ
+   */
+  const clusters = useMemo(() => {
+    const groups = new Map<string, AccidentCluster>();
+
+    for (const point of visiblePoints) {
+      const key = `${point.lat.toFixed(6)},${point.lng.toFixed(6)}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = { key, lat: point.lat, lng: point.lng, points: [], triage: null };
+        groups.set(key, group);
+      }
+      group.points.push(point);
+    }
+
+    for (const group of groups.values()) {
+      // เรียงเหตุล่าสุดขึ้นก่อน (มาก -> น้อย)
+      // เทียบเป็นตัวเลข ไม่ใช้ localeCompare เพราะ collation บางภาษาข้ามอักขระคั่น
+      // แล้วอาจให้ลำดับที่ไม่ตรงกับเวลาจริง
+      group.points.sort(
+        (a, b) =>
+          Date.parse(b.incidentDatetime) - Date.parse(a.incidentDatetime),
+      );
+      group.triage = dominantTriage(group.points);
+    }
+
+    return [...groups.values()];
+  }, [visiblePoints]);
+
+  const maxClusterCount = useMemo(
+    () => clusters.reduce((max, c) => Math.max(max, c.points.length), 1),
+    [clusters],
+  );
+
   /** สรุปจำนวนฐานกู้ชีพตามระดับ ใช้แสดงใต้หัวข้อในแผง */
   const rescueByLevel = useMemo(() => {
     const counts = new Map<string, number>();
@@ -225,14 +502,31 @@ export default function AccidentMap({
     return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [rescueBases]);
 
+  /**
+   * ปิดชั้นจุดเกิดเหตุแล้วให้ปลดติ๊กระดับคัดแยกทั้งหมดด้วย
+   * ไม่งั้นแผงจะโชว์ว่าติ๊กครบทั้งที่แผนที่ไม่มีหมุดสักจุด
+   * เปิดกลับมาก็ติ๊กคืนให้ครบ ผู้ใช้ไม่ต้องไล่ติ๊กใหม่ทีละระดับ
+   */
+  const toggleAccidents = () => {
+    const next = !showAccidents;
+    setShowAccidents(next);
+    setHiddenTriage(next ? new Set() : new Set([...TRIAGE_LEVELS, "unknown"]));
+  };
+
   const toggleTriage = (triage: TriageLevel | null) => {
     const key = triage ?? "unknown";
+    const turningOn = hiddenTriage.has(key);
+
     setHiddenTriage((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
+
+    // ติ๊กระดับใดกลับเข้ามาแปลว่าอยากเห็นหมุด จึงเปิดชั้นจุดเกิดเหตุให้เอง
+    // ไม่งั้นติ๊กแล้วแผนที่ยังว่าง ผู้ใช้จะนึกว่าช่องติ๊กเสีย
+    if (turningOn) setShowAccidents(true);
   };
 
   const untriagedCount = countByTriage.get("unknown") ?? 0;
@@ -275,69 +569,33 @@ export default function AccidentMap({
         />
 
         {showAccidents &&
-          visiblePoints.map((point) => (
-            <CircleMarker
-              key={point.id}
+          clusters.map((cluster) => (
+            <Marker
+              key={cluster.key}
               ref={(marker) => {
-                if (marker) markerRefs.current.set(point.id, marker);
-                else markerRefs.current.delete(point.id);
+                // ทุกเหตุในพิกัดนี้ชี้มาที่หมุดเดียวกัน ช่องค้นหาจึงเปิด popup ได้ทุกรายการ
+                for (const point of cluster.points) {
+                  if (marker) markerRefs.current.set(point.id, marker);
+                  else markerRefs.current.delete(point.id);
+                }
               }}
               pane={ACCIDENT_PANE}
-              center={[point.lat, point.lng]}
-              radius={ACCIDENT_RADIUS}
-              pathOptions={{
-                color: "#ffffff",
-                weight: 2.5,
-                fillColor: triageColor(point.triage),
-                fillOpacity: 0.9,
-              }}
+              position={[cluster.lat, cluster.lng]}
+              icon={clusterIcon({
+                count: cluster.points.length,
+                maxCount: maxClusterCount,
+                triage: cluster.triage,
+              })}
+              // หมุดเล็กต้องอยู่บนหมุดใหญ่ ไม่งั้นถูกกลบจนคลิกไม่ได้
+              zIndexOffset={-cluster.points.length}
             >
-              <Popup>
-                <div className="space-y-1 text-sm">
-                  <p className="font-semibold">
-                    {point.place ?? "ไม่ระบุสถานที่"}
-                  </p>
-                  {(point.subdistrict || point.district) && (
-                    <p className="text-black/60">
-                      {[
-                        point.subdistrict && `ต.${point.subdistrict}`,
-                        point.district && `อ.${point.district}`,
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    </p>
-                  )}
-                  <p className="text-black/60">
-                    {DATETIME_FORMAT.format(new Date(point.incidentDatetime))} น.
-                  </p>
-                  <p className="flex items-center gap-1.5">
-                    <span
-                      aria-hidden
-                      className="inline-block size-3 rounded-full border border-black/20"
-                      style={{ backgroundColor: triageColor(point.triage) }}
-                    />
-                    <span>{triageLabel(point.triage)}</span>
-                  </p>
-                  <p className="text-black/60">
-                    ดื่มสุรา:{" "}
-                    {point.drunk === null
-                      ? "ไม่ระบุ"
-                      : point.drunk
-                        ? "ใช่"
-                        : "ไม่ใช่"}
-                  </p>
-                  {patientName(point) && (
-                    <p className="text-black/60">
-                      ผู้ประสบเหตุ: {patientName(point)}
-                    </p>
-                  )}
-                  {point.hn && <p className="text-black/60">HN: {point.hn}</p>}
-                  <p className="text-black/40">
-                    {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
-                  </p>
-                </div>
+              <Popup minWidth={360} maxWidth={560}>
+                <ClusterPopup
+                  cluster={cluster}
+                  focusedId={focus?.point.id ?? null}
+                />
               </Popup>
-            </CircleMarker>
+            </Marker>
           ))}
 
         {showRescue &&
@@ -425,9 +683,10 @@ export default function AccidentMap({
         {panelOpen && (
           <MapControlPanel
             showAccidents={showAccidents}
-            onToggleAccidents={() => setShowAccidents((v) => !v)}
+            onToggleAccidents={toggleAccidents}
             accidentCount={points.length}
             visibleAccidentCount={visiblePoints.length}
+            clusterCount={clusters.length}
             triageRows={triageRows}
             countByTriage={countByTriage}
             isTriageHidden={(triage) => hiddenTriage.has(triage ?? "unknown")}
