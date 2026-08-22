@@ -54,6 +54,13 @@ export type AccidentFilters = {
   cbd?: string;
 };
 
+/**
+ * ทุก query อ่านจาก view `accident_final_team` ไม่ใช่ตาราง `accident` ตรงๆ
+ * เพราะเหตุหนึ่งครั้งมีได้หลายชุดปฏิบัติการ (ชุดแรกไปถึงแล้วส่งต่อชุดระดับสูงกว่า)
+ * ถ้านับจากตารางดิบ ผู้ป่วยคนเดียวจะถูกนับซ้ำตามจำนวนชุดที่เข้าไปทำงาน
+ * view คัดเหลือเฉพาะชุดสุดท้ายที่รับช่วง — ดูกติกาการเรียงได้ในไฟล์ migration
+ */
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -117,7 +124,7 @@ export async function getAccidentPoints(
       cbd,
       ST_Y(place_coordinate::geometry) AS lat,
       ST_X(place_coordinate::geometry) AS lng
-    FROM accident
+    FROM accident_final_team
     WHERE ${Prisma.join(conditions, " AND ")}
     ORDER BY incident_datetime DESC
   `;
@@ -145,7 +152,7 @@ export async function getAccidentPoints(
 /** จำนวนเคสทั้งหมดที่มีพิกัด ใช้เทียบกับผลลัพธ์หลังกรอง */
 export async function getTotalCount(cbd?: string): Promise<number> {
   const [row] = await prisma.$queryRaw<{ count: bigint }[]>`
-    SELECT count(*) AS count FROM accident
+    SELECT count(*) AS count FROM accident_final_team
     WHERE place_coordinate IS NOT NULL AND ${cbdCondition(cbd)}
   `;
 
@@ -156,7 +163,7 @@ export async function getTotalCount(cbd?: string): Promise<number> {
 export async function getDistricts(cbd?: string): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ district: string }[]>`
     SELECT DISTINCT district
-    FROM accident
+    FROM accident_final_team
     WHERE district IS NOT NULL AND ${cbdCondition(cbd)}
     ORDER BY district
   `;
@@ -175,7 +182,7 @@ export async function getDateRange(cbd?: string): Promise<{
     SELECT
       to_char(MIN(incident_datetime) AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM-DD') AS min,
       to_char(MAX(incident_datetime) AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM-DD') AS max
-    FROM accident
+    FROM accident_final_team
     WHERE ${cbdCondition(cbd)}
   `;
 
@@ -195,7 +202,7 @@ export async function getCbdOptions(): Promise<CbdOption[]> {
       split_part(split_part(cbd, ']', 1), '[', 2) AS code,
       cbd AS label,
       count(*) AS count
-    FROM accident
+    FROM accident_final_team
     WHERE cbd IS NOT NULL AND cbd <> '' AND place_coordinate IS NOT NULL
     GROUP BY cbd
     ORDER BY count(*) DESC
