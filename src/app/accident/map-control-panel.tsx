@@ -6,7 +6,7 @@ import { RESCUE_COLOR, RISK_COLOR } from "./map-icons";
 import { type TriageLevel, triageColor, triageLabel } from "./triage";
 
 const CARD =
-  "pointer-events-auto w-full rounded-lg border border-black/15 bg-white p-3 shadow-lg sm:w-64 dark:border-white/20 dark:bg-neutral-900";
+  "pointer-events-auto min-h-0 w-full overflow-y-auto rounded-lg border border-black/15 bg-white p-3 shadow-lg sm:w-64 dark:border-white/20 dark:bg-neutral-900";
 const HEADING =
   "mb-2 text-xs font-semibold uppercase tracking-wide text-foreground/80";
 

@@ -22,12 +22,13 @@ export default function BasemapSwitch({
     <div className="pointer-events-auto relative min-w-0 flex-1 sm:flex-none">
       <button
         type="button"
+        aria-label="แผนที่ฐาน"
         aria-expanded={mobileOpen}
         aria-controls={listId}
         onClick={() => setMobileOpen((open) => !open)}
         className="flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-black/15 bg-white px-3 text-sm font-medium text-foreground shadow-md sm:hidden dark:border-white/20 dark:bg-neutral-900"
       >
-        <span className="truncate">แผนที่ฐาน: {activeMap.label}</span>
+        <span className="truncate">{activeMap.label}</span>
         <svg
           aria-hidden
           viewBox="0 0 20 20"

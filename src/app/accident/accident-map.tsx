@@ -407,7 +407,7 @@ export default function AccidentMap({
       )}
 
       {/* แผงควบคุม วางนอก MapContainer เพื่อไม่ให้ event ตกไปที่แผนที่ */}
-      <div className="pointer-events-none absolute inset-x-2 top-2 z-[1000] flex max-h-[calc(100%-1rem)] flex-col items-stretch gap-2 overflow-y-auto sm:inset-x-auto sm:right-3 sm:top-3 sm:max-h-[calc(100%-1.5rem)] sm:items-end">
+      <div className="pointer-events-none absolute top-2 right-2 left-14 z-[1000] flex max-h-[calc(100%-1rem)] flex-col items-stretch gap-2 sm:top-3 sm:right-3 sm:left-auto sm:max-h-[calc(100%-1.5rem)] sm:items-end">
         {/* แถวบน — สลับแผนที่ฐาน (อิสระ ไม่ยุบตามแผง) อยู่แถวเดียวกับปุ่มเปิด/ปิดแผง */}
         <div className="flex min-w-0 items-center gap-2">
           <BasemapSwitch activeId={active.id} onChange={setActiveId} />
