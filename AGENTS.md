@@ -9,6 +9,18 @@
 - Use `playwright-cli` skill to test this repo
 - After open url always run `playwright-cli show` for show your test action to user.
 
+## SSH
+- Shell นี้ไม่มี interactive `ssh` — ให้ใช้ `plink` และ pipe `y` เพื่อ auto-accept host key:
+
+```bash
+echo y | plink -ssh -P <port> -pw '<pwd>' <user>@<host> '<command>'
+```
+
+- Production host (credential อยู่ใน @docs/DEPLOY.md):
+- Session ไม่ persistent — ต้องต่อคำสั่งด้วย `&&` ภายใน quote เดียวกัน
+- ครอบ password ด้วย single quote เสมอ (มีอักขระ `@`)
+- `sudo` ใช้ password เดียวกับ user: `echo 'Plkhe@lth00051' | sudo -S <command>`
+
 ## Deploy
 - read @docs/DEPLOY.md
 
