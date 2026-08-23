@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { DatePicker, addDays, todayIso } from "@/components/datepicker";
 import type { AccidentPoint } from "./accident-data";
 import { ALL_CBD, DEFAULT_CBD, type CbdOption } from "./cbd";
 import HnSearch from "./hn-search";
@@ -34,8 +35,11 @@ export const CONTROL_CLASS =
   "transition-colors outline-none focus-visible:border-white focus-visible:ring-2 " +
   "focus-visible:ring-white/70";
 
-/** คำเชื่อมคั่นกลางช่องวันที่สองช่อง ทำหน้าที่เป็นป้ายกำกับในตัว */
-const CONNECTOR = "text-sm text-sky-100";
+/**
+ * DatePicker ห่อ input ไว้ใน div — `focus-visible` ไม่ทำงานกับ div ที่โฟกัสไม่ได้
+ * จึงสลับเป็น `focus-within` เพื่อให้ขอบไฮไลต์ตอนเคอร์เซอร์อยู่ในช่องเหมือนช่องอื่น
+ */
+const DATE_FIELD_CLASS = CONTROL_CLASS.replaceAll("focus-visible:", "focus-within:");
 
 export default function AccidentToolbar({
   points,
@@ -118,29 +122,41 @@ export default function AccidentToolbar({
         ))}
       </select>
 
-      {/* ช่วงวันที่ — ใช้คำเชื่อมแทนป้ายกำกับด้านบน
-          input[type=date] ไม่รองรับ placeholder เบราว์เซอร์จะโชว์รูปแบบวันที่ให้เอง
-          ยังใส่ aria-label ไว้เพื่อให้ screen reader รู้ว่าช่องไหนคือช่องไหน */}
-      <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-2 sm:flex sm:w-auto">
-        <input
-          type="date"
-          aria-label="ตั้งแต่วันที่"
-          value={from}
-          min={dateBounds.min ?? undefined}
-          max={to || (dateBounds.max ?? undefined)}
-          onChange={(e) => setParam("from", e.target.value)}
-          className={`${CONTROL_CLASS} col-span-2 w-full min-w-0 sm:col-span-1 sm:w-auto`}
-        />
-        <span className={CONNECTOR}>ถึง</span>
-        <input
-          type="date"
-          aria-label="ถึงวันที่"
-          value={to}
-          min={from || (dateBounds.min ?? undefined)}
-          max={dateBounds.max ?? undefined}
-          onChange={(e) => setParam("to", e.target.value)}
-          className={`${CONTROL_CLASS} w-full min-w-0 sm:w-auto`}
-        />
+      {/* ช่วงวันที่ — placeholder ในช่องบอกอยู่แล้วว่าช่องไหนต้นทาง/ปลายทาง
+          ใช้ DatePicker ของโปรเจกต์แทน input[type=date] เพราะต้องการ พ.ศ.
+          ปฏิทินหน้าตาเดียวกันทุกเบราว์เซอร์ และเห็นช่วงที่เลือกเป็นแถบเดียวกัน */}
+      <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div className="w-full min-w-0 sm:w-40">
+          <DatePicker
+            label="ตั้งแต่วันที่"
+            placeholder="ตั้งแต่วันที่"
+            value={from}
+            min={dateBounds.min ?? undefined}
+            max={to || (dateBounds.max ?? undefined)}
+            rangeFrom={from || undefined}
+            rangeTo={to || undefined}
+            presets={[
+              { label: "7 วันล่าสุด", value: addDays(todayIso(), -6) },
+              { label: "30 วันล่าสุด", value: addDays(todayIso(), -29) },
+            ]}
+            onChange={(iso) => setParam("from", iso)}
+            className={DATE_FIELD_CLASS}
+          />
+        </div>
+
+        <div className="w-full min-w-0 sm:w-40">
+          <DatePicker
+            label="ถึงวันที่"
+            placeholder="ถึงวันที่"
+            value={to}
+            min={from || (dateBounds.min ?? undefined)}
+            max={dateBounds.max ?? undefined}
+            rangeFrom={from || undefined}
+            rangeTo={to || undefined}
+            onChange={(iso) => setParam("to", iso)}
+            className={DATE_FIELD_CLASS}
+          />
+        </div>
       </div>
 
       {/* ตัวเลือกแรก "ทุกอำเภอ" ทำหน้าที่เป็น hint ในตัว */}
