@@ -25,6 +25,7 @@ export default function MapLoader({
   districtBounds,
   selectedDistrict,
   focus,
+  resetView,
 }: {
   points: AccidentPoint[];
   rescueBases: RescueBasePoint[];
@@ -33,6 +34,7 @@ export default function MapLoader({
   districtBounds: Record<string, BoundsTuple>;
   selectedDistrict: string | null;
   focus: FocusRequest | null;
+  resetView: number;
 }) {
   return (
     <AccidentMap
@@ -43,6 +45,7 @@ export default function MapLoader({
       districtBounds={districtBounds}
       selectedDistrict={selectedDistrict}
       focus={focus}
+      resetView={resetView}
     />
   );
 }

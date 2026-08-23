@@ -42,10 +42,17 @@ export default function AccidentView({
   totalCount,
 }: Props) {
   const [focus, setFocus] = useState<FocusRequest | null>(null);
+  // นับครั้งที่กดล้างตัวกรอง — ตัวเลขที่เปลี่ยนคือสัญญาณให้แผนที่ดึงมุมมองกลับ
+  const [resetView, setResetView] = useState(0);
 
   // ห่อเป็น object ใหม่ทุกครั้ง เพื่อให้เลือกจุดเดิมซ้ำแล้วแผนที่ยัง pan ไปอีกรอบ
   const handleSelectPoint = useCallback((point: AccidentPoint) => {
     setFocus({ point });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setFocus(null);
+    setResetView((count) => count + 1);
   }, []);
 
   return (
@@ -60,6 +67,7 @@ export default function AccidentView({
           dateBounds={dateBounds}
           resultCount={points.length}
           totalCount={totalCount}
+          onClearFilters={handleClearFilters}
         />
       </Suspense>
 
@@ -72,6 +80,7 @@ export default function AccidentView({
           districtBounds={districtBounds}
           selectedDistrict={selectedDistrict}
           focus={focus}
+          resetView={resetView}
         />
       </div>
     </>

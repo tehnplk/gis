@@ -156,6 +156,38 @@ function DistrictFocus({
 }
 
 /**
+ * กดล้างตัวกรองแล้วดึงมุมมองกลับค่าเริ่มต้น (พอดีทั้งจังหวัด)
+ *
+ * DistrictFocus จัดมุมมองใหม่เฉพาะตอน "อำเภอที่เลือก" เปลี่ยน แต่การค้น HN
+ * พาแผนที่ไปที่ซูม 15 โดยไม่แตะ URL เลย ปุ่มล้างตัวกรองจึงต้องมีสัญญาณของตัวเอง
+ */
+function ResetView({
+  signal,
+  provinceExtent,
+}: {
+  signal: number;
+  provinceExtent: BoundsTuple | null;
+}) {
+  const map = useMap();
+  // จำสัญญาณที่จัดการไปแล้ว กัน effect ทำงานซ้ำตอน provinceExtent ได้ identity ใหม่
+  const handled = useRef(signal);
+
+  useEffect(() => {
+    if (handled.current === signal) return;
+    handled.current = signal;
+
+    map.closePopup();
+    if (provinceExtent) {
+      map.flyToBounds(provinceExtent, { padding: FIT_PADDING, duration: 0.9 });
+    } else {
+      map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 0.9 });
+    }
+  }, [signal, map, provinceExtent]);
+
+  return null;
+}
+
+/**
  * เลื่อนแผนที่ไปยังจุดที่ผู้ใช้เลือกจากช่องค้น HN แล้วเปิด popup ให้
  *
  * ไม่ได้เล็งไปที่หมุดตรงๆ เพราะ popup สูงหลายร้อยพิกเซลและงอกขึ้นด้านบนของหมุด
@@ -393,6 +425,7 @@ export default function AccidentMap({
   districtBounds,
   selectedDistrict,
   focus,
+  resetView,
 }: {
   points: AccidentPoint[];
   rescueBases: RescueBasePoint[];
@@ -401,6 +434,8 @@ export default function AccidentMap({
   districtBounds: Record<string, BoundsTuple>;
   selectedDistrict: string | null;
   focus: FocusRequest | null;
+  /** ตัวเลขที่เพิ่มขึ้นทุกครั้งที่กดล้างตัวกรอง */
+  resetView: number;
 }) {
   const [activeId, setActiveId] = useState(BASE_MAPS[0].id);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -662,6 +697,7 @@ export default function AccidentMap({
           points={points}
         />
         <PanToFocus focus={focus} markerRefs={markerRefs} />
+        <ResetView signal={resetView} provinceExtent={districtExtent} />
         <ScaleControl position="bottomleft" imperial={false} />
         <MapReadout />
       </MapContainer>

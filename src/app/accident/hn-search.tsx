@@ -20,11 +20,18 @@ const DATE_FORMAT = new Intl.DateTimeFormat("th-TH", {
 type Props = {
   points: AccidentPoint[];
   onSelect: (point: AccidentPoint) => void;
+  /** ควบคุมจากภายนอก เพื่อให้ปุ่ม "ล้างตัวกรอง" ล้างช่องนี้ได้ด้วย */
+  query: string;
+  onQueryChange: (query: string) => void;
 };
 
-export default function HnSearch({ points, onSelect }: Props) {
+export default function HnSearch({
+  points,
+  onSelect,
+  query,
+  onQueryChange,
+}: Props) {
   const listId = useId();
-  const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,7 +66,7 @@ export default function HnSearch({ points, onSelect }: Props) {
   }, [open]);
 
   const choose = (point: AccidentPoint) => {
-    setQuery(point.hn ?? "");
+    onQueryChange(point.hn ?? "");
     setOpen(false);
     onSelect(point);
   };
@@ -120,7 +127,7 @@ export default function HnSearch({ points, onSelect }: Props) {
         placeholder="ค้นด้วย HN"
         value={query}
         onChange={(e) => {
-          setQuery(e.target.value);
+          onQueryChange(e.target.value);
           setOpen(true);
           // รีเซ็ตตรงนี้แทนใน effect กัน index ค้างเกินขอบรายการใหม่
           setActiveIndex(0);

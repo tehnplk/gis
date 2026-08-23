@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { DatePicker, addDays, todayIso } from "@/components/datepicker";
 import type { AccidentPoint } from "./accident-data";
 import { ALL_CBD, DEFAULT_CBD, type CbdOption } from "./cbd";
@@ -22,6 +22,8 @@ type Props = {
   dateBounds: { min: string | null; max: string | null };
   resultCount: number;
   totalCount: number;
+  /** กดล้างตัวกรองแล้ว — ให้แผนที่กลับไปมุมมองเริ่มต้น */
+  onClearFilters: () => void;
 };
 
 const FILTER_KEYS = ["from", "to", "district", "cbd"] as const;
@@ -50,6 +52,7 @@ export default function AccidentToolbar({
   dateBounds,
   resultCount,
   totalCount,
+  onClearFilters,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,7 +63,12 @@ export default function AccidentToolbar({
   const district = searchParams.get("district") ?? "";
   // ไม่มีพารามิเตอร์ = ดูอุบัติเหตุยานยนต์ ต้องให้ select โชว์ค่านั้นตั้งแต่แรก
   const cbd = searchParams.get("cbd") ?? DEFAULT_CBD;
-  const hasFilter = FILTER_KEYS.some((key) => searchParams.get(key));
+
+  // HN ไม่ได้อยู่ใน query string เพราะมันสั่งแผนที่ ไม่ได้กรองข้อมูล
+  // แต่ผู้ใช้มองว่าเป็นตัวกรองเหมือนกัน ปุ่มล้างจึงต้องขึ้นด้วย
+  const [hnQuery, setHnQuery] = useState("");
+  const hasFilter =
+    FILTER_KEYS.some((key) => searchParams.get(key)) || hnQuery.trim() !== "";
 
   /** อัปเดต query string แล้วให้ server component ดึงข้อมูลใหม่ */
   const setParam = (key: string, value: string) => {
@@ -74,6 +82,8 @@ export default function AccidentToolbar({
   };
 
   const clearFilters = () => {
+    setHnQuery("");
+    onClearFilters();
     startTransition(() => {
       router.push("?", { scroll: false });
     });
@@ -174,7 +184,12 @@ export default function AccidentToolbar({
         ))}
       </select>
 
-      <HnSearch points={points} onSelect={onSelectPoint} />
+      <HnSearch
+        points={points}
+        onSelect={onSelectPoint}
+        query={hnQuery}
+        onQueryChange={setHnQuery}
+      />
 
       {hasFilter && (
         <button
