@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "สสจ.พิษณุโลก",
 };
 
-const DEFAULT_CALLBACK_URL = "/accident/upload";
+const DEFAULT_CALLBACK_URL = "/accident";
 
 /**
  * รับเฉพาะ path ภายในเว็บนี้ กัน open redirect จาก callbackUrl ที่ผู้ใช้ส่งมาเอง
