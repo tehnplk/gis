@@ -1,13 +1,18 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { DatePicker, addDays, todayIso } from "@/components/datepicker";
+import {
+  CONTROL_CLASS,
+  GHOST_BUTTON_CLASS,
+  MapTopbar,
+  TopbarCount,
+} from "@/components/map-topbar";
 import type { AccidentPoint } from "./accident-data";
 import { ALL_CBD, DEFAULT_CBD, type CbdOption } from "./cbd";
 import HnSearch from "./hn-search";
-import UserMenu from "./user-menu";
+import UserMenu from "@/components/user-menu";
 
 type Props = {
   /** จุดที่แสดงอยู่ตอนนี้ ใช้เป็นตัวเลือกของ autocomplete */
@@ -27,15 +32,6 @@ type Props = {
 };
 
 const FILTER_KEYS = ["from", "to", "district", "cbd"] as const;
-
-/**
- * ช่องกรอกทุกช่องใช้คลาสชุดเดียวกัน ความสูงจึงเท่ากันหมดและมี focus ring ที่มองเห็นได้
- * (ค่าเริ่มต้นของเบราว์เซอร์บน input[type=date] ไม่สม่ำเสมอ)
- */
-export const CONTROL_CLASS =
-  "h-10 rounded-md border border-sky-900/25 bg-white px-2.5 text-sm text-slate-900 sm:h-9 " +
-  "transition-colors outline-none focus-visible:border-white focus-visible:ring-2 " +
-  "focus-visible:ring-white/70";
 
 /**
  * DatePicker ห่อ input ไว้ใน div — `focus-visible` ไม่ทำงานกับ div ที่โฟกัสไม่ได้
@@ -90,32 +86,7 @@ export default function AccidentToolbar({
   };
 
   return (
-    <header className="relative z-[1200] flex shrink-0 flex-wrap items-stretch gap-x-3 gap-y-2 border-b border-sky-950 bg-sky-800 px-3 py-2.5 shadow-sm sm:items-center sm:px-4 2xl:flex-nowrap">
-      {/* กลุ่มตราหน่วยงาน */}
-      <div className="flex w-full min-w-0 items-center gap-2.5 sm:w-auto">
-        <Image
-          src="/logo.png"
-          alt="ตราสำนักงานปลัดกระทรวงสาธารณสุข"
-          width={38}
-          height={38}
-          priority
-          className="size-9 shrink-0 sm:size-[38px]"
-        />
-        <div className="min-w-0 leading-tight">
-          <h1 className="text-sm font-semibold leading-5 text-white sm:text-[15px] sm:whitespace-nowrap">
-            EMS - GIS
-          </h1>
-          <p className="truncate text-[11px] text-sky-100 sm:text-xs sm:whitespace-nowrap">
-            สสจ.พิษณุโลก
-          </p>
-        </div>
-      </div>
-
-      <div
-        aria-hidden
-        className="mx-1 hidden h-9 w-px bg-white/25 lg:block"
-      />
-
+    <MapTopbar title="EMS - GIS">
       {/* ประเภทเหตุ — ค่าเริ่มต้นคืออุบัติเหตุยานยนต์ ไม่ใช่ "ทุกประเภท"
           เพราะแผนที่นี้ทำมาเพื่อดูอุบัติเหตุทางถนนเป็นหลัก */}
       <select
@@ -195,7 +166,7 @@ export default function AccidentToolbar({
         <button
           type="button"
           onClick={clearFilters}
-          className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border border-white/40 bg-white/10 px-2.5 text-sm text-white transition-colors outline-none hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70 sm:h-9 sm:w-auto"
+          className={`${GHOST_BUTTON_CLASS} w-full sm:w-auto`}
         >
           {/* ไอคอน SVG ไม่ใช้ emoji เพื่อให้คมทุกความละเอียดและอ่านออกด้วย screen reader */}
           <svg
@@ -216,21 +187,22 @@ export default function AccidentToolbar({
       {/* ตัวเลขผลลัพธ์กับอวาตาร์อยู่กลุ่มเดียวกัน ไม่งั้นเวลา header ขึ้นบรรทัดใหม่
           อวาตาร์จะหลุดไปอยู่คนละแถวกับตัวเลข ดูเหมือนหลงมาจากที่อื่น */}
       <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-        <div
-          aria-live="polite"
-          className={`flex h-10 flex-1 items-center justify-center rounded-md bg-white/15 px-2.5 text-sm whitespace-nowrap tabular-nums transition-opacity sm:h-auto sm:flex-none sm:py-1.5 ${
-            isPending ? "opacity-50" : ""
-          }`}
-        >
+        <TopbarCount dim={isPending}>
           <span className="font-semibold text-white">{resultCount}</span>
           <span className="text-sky-100">
             {" / "}
             {totalCount} เคส
           </span>
-        </div>
+        </TopbarCount>
 
-        {user && <UserMenu name={user.name} role={user.role} />}
+        {user && (
+          <UserMenu
+            name={user.name}
+            role={user.role}
+            links={[{ href: "/ems/upload", label: "จัดการข้อมูล" }]}
+          />
+        )}
       </div>
-    </header>
+    </MapTopbar>
   );
 }

@@ -23,12 +23,17 @@ const ROLE_LABELS: Record<string, string> = {
   guest: "รออนุมัติสิทธิ์",
 };
 
+/** ลิงก์เฉพาะของแต่ละระบบที่วางไว้บนสุดของเมนู (EMS ส่ง "จัดการข้อมูล" เข้ามา) */
+export type UserMenuLink = { href: string; label: string };
+
 export default function UserMenu({
   name,
   role,
+  links = [],
 }: {
   name: string;
   role?: string;
+  links?: UserMenuLink[];
 }) {
   const menuId = useId();
   const [open, setOpen] = useState(false);
@@ -84,13 +89,26 @@ export default function UserMenu({
             )}
           </div>
 
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-sm transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              {link.label}
+            </Link>
+          ))}
+
+          {/* ทุกระบบใช้ topbar เดียวกัน จึงต้องมีทางกลับไปเลือกระบบอื่นเสมอ */}
           <Link
-            href="/accident/upload"
+            href="/portal"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
           >
-            จัดการข้อมูล
+            เลือกระบบ
           </Link>
 
           {/* แก้สิทธิ์ผู้อื่นได้เฉพาะ super — proxy.ts กันซ้ำอีกชั้นอยู่แล้ว

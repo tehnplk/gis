@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { type BoundaryLevel, getBoundaryGeoJson } from "@/app/accident/boundary-data";
+import { type BoundaryLevel, getBoundaryGeoJson } from "@/app/ems/boundary-data";
 
 const LEVELS: BoundaryLevel[] = ["district", "subdistrict"];
 

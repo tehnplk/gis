@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import {
   PageHeading,
   StatusNotice,
-} from "@/app/accident/(management)/management-ui";
+} from "@/components/management-ui";
 import { prisma } from "@/lib/prisma";
 import { toggleUserActive, updateUserRole } from "./actions";
 import { ASSIGNABLE_ROLES, ROLE_LABELS } from "./roles";

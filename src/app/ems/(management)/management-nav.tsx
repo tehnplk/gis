@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
-  { href: "/accident/upload", label: "นำเข้าข้อมูล" },
-  { href: "/accident/risk", label: "จัดการจุดเสี่ยง" },
-  { href: "/accident/rescue", label: "จัดการจุดรถกู้ชีพ" },
+  { href: "/ems/upload", label: "นำเข้าข้อมูล" },
+  { href: "/ems/risk", label: "จัดการจุดเสี่ยง" },
+  { href: "/ems/rescue", label: "จัดการจุดรถกู้ชีพ" },
   // เฉพาะ super เท่านั้น proxy.ts กันไว้อีกชั้นแล้ว
   { href: "/manage-user", label: "จัดการผู้ใช้", superOnly: true },
 ] as const;

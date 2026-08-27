@@ -1,1 +1,1 @@
-export { default } from "@/app/accident/(management)/layout";
+export { default } from "@/app/ems/(management)/layout";

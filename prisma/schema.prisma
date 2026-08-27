@@ -155,6 +155,33 @@ model RiskPoint {
   @@map("risk_point")
 }
 
+/// กลุ่มประชากรเปราะบางที่ผู้ใช้ตั้งเอง เช่น ผู้สูงอายุ ผู้ป่วยติดเตียง
+/// สีใช้ระบายหมุดบนแผนที่ให้แยกกลุ่มออกจากกันได้ ระบบเลือกให้อัตโนมัติตอนสร้าง
+model VulnerableGroup {
+  id         Int               @id @default(autoincrement())
+  name       String            @unique @db.VarChar(120)
+  color      String            @default("#0369a1") @db.VarChar(20)
+  created_at DateTime          @default(now()) @db.Timestamptz(3)
+  points     VulnerablePoint[]
+
+  @@map("vulnerable_group")
+}
+
+/// หมุดบุคคล/ครัวเรือนกลุ่มเปราะบาง — ปักจากแผนที่หน้า /vulnerable
+model VulnerablePoint {
+  id         Int             @id @default(autoincrement())
+  name       String          @db.VarChar(255)
+  note       String?         @db.Text
+  group_id   Int
+  group      VulnerableGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  coordinate Unsupported("geometry(Point, 4326)")?
+  created_at DateTime        @default(now()) @db.Timestamptz(3)
+
+  @@index([group_id])
+  @@index([coordinate], type: Gist)
+  @@map("vulnerable_point")
+}
+
 /// ขอบเขตอำเภอ (ADM2) นำเข้าจาก desktop GIS — HDX/OCHA Thailand boundaries
 model DistrictBoundary {
   id            Int     @id @default(autoincrement())

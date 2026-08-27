@@ -10,9 +10,9 @@ import {
   positiveId,
   requiredText,
   statusUrl,
-} from "../validation";
+} from "@/lib/form-validation";
 
-const PATH = "/accident/rescue";
+const PATH = "/ems/rescue";
 
 function rescueValues(formData: FormData) {
   return {
@@ -25,7 +25,7 @@ function rescueValues(formData: FormData) {
 }
 
 function refresh() {
-  revalidatePath("/accident");
+  revalidatePath("/ems");
   revalidatePath(PATH);
 }
 

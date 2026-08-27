@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { SubmitButton } from "../form-controls";
-import { PageHeading, StatusNotice } from "../management-ui";
+import { SubmitButton } from "@/components/form-controls";
+import { PageHeading, StatusNotice } from "@/components/management-ui";
 import { importAccidents } from "./actions";
 import { UploadDropzone } from "./upload-dropzone";
 

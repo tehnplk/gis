@@ -10,15 +10,15 @@ export const metadata: Metadata = {
 
 /**
  * หน้ารวมทางเข้าของระบบ GIS ทั้งหมด
- * ระบบไหนยังไม่เปิดใช้ให้ตั้ง `href: null` การ์ดจะกลายเป็นปุ่มทึบพร้อมป้าย "เร็ว ๆ นี้"
- * แทนที่จะเป็นลิงก์ที่กดแล้วเจอ 404
+ * `badge` ใส่เมื่อระบบยังไม่พร้อมใช้จริง ลิงก์ยังกดเข้าไปดูโครงหน้าได้
  */
 const SYSTEMS = [
   {
     key: "ems",
     name: "ระบบ GIS - EMS",
     description: "แผนที่อุบัติเหตุและการแพทย์ฉุกเฉิน จุดเกิดเหตุ ชุดปฏิบัติการ และจุดเสี่ยง",
-    href: "/accident",
+    href: "/ems",
+    badge: null,
     icon: (
       <path d="M12 3v6m0 0v6m0-6H6m6 0h6M4.5 20.25h15a1.5 1.5 0 0 0 1.5-1.5V8.25a1.5 1.5 0 0 0-1.5-1.5h-15A1.5 1.5 0 0 0 3 8.25v10.5a1.5 1.5 0 0 0 1.5 1.5Z" />
     ),
@@ -27,7 +27,8 @@ const SYSTEMS = [
     key: "vulnerable",
     name: "ระบบ GIS - กลุ่มเปราะบาง",
     description: "แผนที่ประชากรกลุ่มเปราะบาง ผู้สูงอายุ ผู้พิการ และผู้ป่วยติดเตียงในพื้นที่",
-    href: null,
+    href: "/vulnerable",
+    badge: "อยู่ระหว่างพัฒนา",
     icon: (
       <path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0v.75h-15v-.75Z" />
     ),
@@ -64,13 +65,7 @@ export default async function PortalPage() {
           {SYSTEMS.map((system) => {
             const card = (
               <>
-                <span
-                  className={`inline-flex size-12 shrink-0 items-center justify-center rounded-lg ${
-                    system.href
-                      ? "bg-sky-100 text-sky-800"
-                      : "bg-slate-200 text-slate-400"
-                  }`}
-                >
+                <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-800">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -90,9 +85,9 @@ export default async function PortalPage() {
                     <span className="text-base font-semibold text-slate-900">
                       {system.name}
                     </span>
-                    {!system.href && (
+                    {system.badge && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                        เร็ว ๆ นี้
+                        {system.badge}
                       </span>
                     )}
                   </span>
@@ -105,21 +100,12 @@ export default async function PortalPage() {
 
             return (
               <li key={system.key}>
-                {system.href ? (
-                  <Link
-                    href={system.href}
-                    className="flex h-full items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors outline-none hover:border-sky-700 hover:bg-sky-50 focus-visible:ring-2 focus-visible:ring-sky-700/40"
-                  >
-                    {card}
-                  </Link>
-                ) : (
-                  <div
-                    aria-disabled
-                    className="flex h-full cursor-not-allowed items-start gap-4 rounded-xl border border-dashed border-slate-300 bg-white/60 p-5"
-                  >
-                    {card}
-                  </div>
-                )}
+                <Link
+                  href={system.href}
+                  className="flex h-full items-start gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors outline-none hover:border-sky-700 hover:bg-sky-50 focus-visible:ring-2 focus-visible:ring-sky-700/40"
+                >
+                  {card}
+                </Link>
               </li>
             );
           })}

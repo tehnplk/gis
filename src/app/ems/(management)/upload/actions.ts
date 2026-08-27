@@ -5,9 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { errorMessage, statusUrl } from "../validation";
+import { errorMessage, statusUrl } from "@/lib/form-validation";
 
-const PATH = "/accident/upload";
+const PATH = "/ems/upload";
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const MAX_ROWS = 5_000;
 const REQUIRED_HEADERS = ["incident_datetime", "lat", "lng"] as const;
@@ -265,7 +265,7 @@ export async function importAccidents(formData: FormData) {
   }
 
   if (failure) redirect(statusUrl(PATH, "error", failure));
-  revalidatePath("/accident");
+  revalidatePath("/ems");
   revalidatePath(PATH);
   redirect(statusUrl(PATH, "success", `นำเข้าข้อมูลสำเร็จ ${imported.toLocaleString("th-TH")} แถว`));
 }

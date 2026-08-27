@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { CrudModal, ModalCancelButton, ModalSubmitButton } from "../crud-modal";
+import { CrudModal, ModalCancelButton, ModalSubmitButton } from "@/components/crud-modal";
 import type { RescueManagementRow } from "../management-data";
-import { Field, INPUT_CLASS } from "../management-ui";
+import { Field, INPUT_CLASS } from "@/components/management-ui";
 import { createRescueBase, deleteRescueBase, updateRescueBase } from "./actions";
 
 type ModalState =

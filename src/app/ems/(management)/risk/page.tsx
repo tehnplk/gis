@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getRiskManagementRows } from "../management-data";
-import { PageHeading, StatusNotice } from "../management-ui";
+import { PageHeading, StatusNotice } from "@/components/management-ui";
 import { RiskCrud } from "./risk-crud";
 
 export const metadata: Metadata = { title: "จัดการจุดเสี่ยง" };

@@ -3,10 +3,15 @@ import { auth } from "@/auth";
 import { DEV_SKIP_AUTH } from "@/lib/dev-auth";
 
 /**
- * ทั้งระบบต้องเข้าสู่ระบบก่อน — `/accident` ครอบคลุมหน้าจัดการทุกหน้าที่อยู่ใต้มันด้วย
+ * ทั้งระบบต้องเข้าสู่ระบบก่อน — `/ems` ครอบคลุมหน้าจัดการทุกหน้าที่อยู่ใต้มันด้วย
  * (`/` redirect ไป `/portal` ซึ่งอยู่ในลิสต์นี้ จึงถูกกันไปในตัว)
  */
-const PROTECTED_PAGE_PREFIXES = ["/portal", "/accident", "/manage-user"];
+const PROTECTED_PAGE_PREFIXES = [
+  "/portal",
+  "/ems",
+  "/vulnerable",
+  "/manage-user",
+];
 
 /**
  * API ตอบเป็น JSON 401/403 แทนการ redirect เพราะ fetch ฝั่ง client
@@ -66,7 +71,7 @@ export const proxy = auth((request) => {
   if (matchesPrefix(pathname, SUPER_ONLY_PAGE_PREFIXES) && user.role !== "super") {
     // ส่งไปหน้าที่เขาเข้าได้จริงพร้อมเหตุผล ไม่ส่งไป /login
     // เพราะคนที่ login อยู่แล้วจะถูกหน้า login เด้งกลับทันที ข้อความจึงไม่มีใครเห็น
-    const url = new URL("/accident/upload", request.nextUrl);
+    const url = new URL("/ems/upload", request.nextUrl);
     url.searchParams.set(
       "error",
       "เฉพาะผู้ดูแลระบบเท่านั้นที่เข้าหน้าจัดการผู้ใช้ได้",

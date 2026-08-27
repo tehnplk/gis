@@ -25,3 +25,13 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
 }
+
+/**
+ * โหมดปักหมุดของหน้ากลุ่มเปราะบาง — เคอร์เซอร์ต้องเป็นกากบาทให้รู้ว่ากำลังจะวางจุด
+ * เขียนเป็น CSS ธรรมดาแทน utility ของ Tailwind เพราะ utility อยู่ใน `@layer utilities`
+ * ส่วน leaflet.css ไม่อยู่ใน layer ใด — ของนอก layer ชนะเสมอไม่ว่า specificity เท่าไร
+ */
+.pin-placing .leaflet-container,
+.pin-placing .leaflet-grab {
+  cursor: crosshair;
+}

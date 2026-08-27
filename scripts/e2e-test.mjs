@@ -46,12 +46,12 @@ async function main() {
   try {
     // 0. Authentication — ทั้งเว็บถูกกันด้วย proxy.ts ต้อง login ก่อนถึงจะทดสอบอย่างอื่นได้
     await testStep("0a. Protected page redirects to /login when signed out", async () => {
-      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      await page.goto(BASE_URL + "/ems", { waitUntil: "networkidle" });
       const url = new URL(page.url());
       if (url.pathname !== "/login") {
         throw new Error("Expected /login, got " + page.url());
       }
-      if (url.searchParams.get("callbackUrl") !== "/accident") {
+      if (url.searchParams.get("callbackUrl") !== "/ems") {
         throw new Error("callbackUrl not preserved: " + page.url());
       }
     });
@@ -83,17 +83,19 @@ async function main() {
       await page.getByRole("textbox", { name: "ชื่อผู้ใช้" }).fill(USERNAME);
       await page.getByRole("textbox", { name: "รหัสผ่าน" }).fill(PASSWORD);
       await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
-      await page.waitForURL(BASE_URL + "/accident", { timeout: 15000 });
+      await page.waitForURL(BASE_URL + "/ems", { timeout: 15000 });
       await page.waitForSelector(".leaflet-container", { timeout: 15000 });
     });
 
     // 1. Navigation and Initial Map Load
-    await testStep("1. Home route (/) redirects to /accident", async () => {
+    await testStep("1. Home route (/) redirects to /portal", async () => {
       await page.goto(BASE_URL + "/", { waitUntil: "networkidle" });
       const url = page.url();
-      if (!url.includes("/accident")) {
-        throw new Error("Expected redirect to /accident, got " + url);
+      if (!url.includes("/portal")) {
+        throw new Error("Expected redirect to /portal, got " + url);
       }
+      // กลับเข้าหน้าแผนที่ก่อน เพราะขั้นถัดไปทดสอบต่อจากหน้านี้
+      await page.goto(BASE_URL + "/ems", { waitUntil: "networkidle" });
     });
 
     await testStep("2. Map Page Title & Header verification", async () => {
@@ -226,9 +228,9 @@ async function main() {
       }
     });
 
-    // 3. Rescue Bases Management CRUD (/accident/rescue)
+    // 3. Rescue Bases Management CRUD (/ems/rescue)
     await testStep("11. Navigate to Rescue Base Management page", async () => {
-      await page.goto(BASE_URL + "/accident/rescue", { waitUntil: "networkidle" });
+      await page.goto(BASE_URL + "/ems/rescue", { waitUntil: "networkidle" });
       const title = await page.locator("h2").textContent();
       if (!title?.includes("จัดการจุดรถกู้ชีพ")) {
         throw new Error("Unexpected management page title: " + title);
@@ -309,9 +311,9 @@ async function main() {
       await page.screenshot({ path: path.join(SCREENSHOT_DIR, "14_rescue_deleted_success.png") });
     });
 
-    // 4. Risk Points Management CRUD (/accident/risk)
+    // 4. Risk Points Management CRUD (/ems/risk)
     await testStep("15. Navigate to Risk Points Management page", async () => {
-      await page.goto(BASE_URL + "/accident/risk", { waitUntil: "networkidle" });
+      await page.goto(BASE_URL + "/ems/risk", { waitUntil: "networkidle" });
       const title = await page.locator("h2").textContent();
       if (!title?.includes("จัดการจุดเสี่ยง")) {
         throw new Error("Unexpected risk page title: " + title);
@@ -391,9 +393,9 @@ async function main() {
       await page.screenshot({ path: path.join(SCREENSHOT_DIR, "21_risk_deleted_success.png") });
     });
 
-    // 5. Upload Management Page (/accident/upload)
+    // 5. Upload Management Page (/ems/upload)
     await testStep("19. Upload Page UI and Format Reference Table", async () => {
-      await page.goto(BASE_URL + "/accident/upload", { waitUntil: "networkidle" });
+      await page.goto(BASE_URL + "/ems/upload", { waitUntil: "networkidle" });
       const heading = await page.locator("h2").textContent();
       if (!heading?.includes("นำเข้าข้อมูลอุบัติเหตุ")) {
         throw new Error("Unexpected upload heading: " + heading);
@@ -435,7 +437,7 @@ async function main() {
 
     // 4. Auth surfaces added after login was introduced
     await testStep("22. Avatar dropdown menu on the map page", async () => {
-      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      await page.goto(BASE_URL + "/ems", { waitUntil: "networkidle" });
       await page.getByRole("button", { name: "บัญชีผู้ใช้" }).click();
 
       const menu = page.getByRole("menu");
@@ -460,12 +462,12 @@ async function main() {
     });
 
     await testStep("24. Sign out clears the session", async () => {
-      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      await page.goto(BASE_URL + "/ems", { waitUntil: "networkidle" });
       await page.getByRole("button", { name: "บัญชีผู้ใช้" }).click();
       await page.getByRole("menuitem", { name: "ออกจากระบบ" }).click();
       await page.waitForURL(/\/login/, { timeout: 15000 });
 
-      await page.goto(BASE_URL + "/accident", { waitUntil: "networkidle" });
+      await page.goto(BASE_URL + "/ems", { waitUntil: "networkidle" });
       if (!page.url().includes("/login")) {
         throw new Error("Session still active after sign out: " + page.url());
       }

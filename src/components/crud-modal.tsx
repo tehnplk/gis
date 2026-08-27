@@ -120,7 +120,10 @@ export function CrudModal({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       onMouseDown={handleBackdrop}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/55 p-2 backdrop-blur-[2px] sm:p-4"
+      // z สูงกว่าทุกชั้นในระบบ (แผงแผนที่ 1000, topbar 1200, ปฏิทิน 1300)
+      // Leaflet วาง pane ของตัวเองที่ z 400-700 ในสแต็กเดียวกับ modal
+      // ถ้าใช้ z-50 แผนที่จะทับหน้าต่างจนกรอกฟอร์มไม่ได้
+      className="fixed inset-0 z-[1400] flex items-center justify-center overflow-y-auto bg-slate-950/55 p-2 backdrop-blur-[2px] sm:p-4"
     >
       <div
         ref={panelRef}

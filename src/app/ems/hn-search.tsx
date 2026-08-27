@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AccidentPoint } from "./accident-data";
-import { CONTROL_CLASS } from "./accident-toolbar";
+import { CONTROL_CLASS } from "@/components/map-topbar";
 import { triageColor } from "./triage";
 
 const MAX_SUGGESTIONS = 8;

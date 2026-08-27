@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getRescueManagementRows } from "../management-data";
-import { PageHeading, StatusNotice } from "../management-ui";
+import { PageHeading, StatusNotice } from "@/components/management-ui";
 import { RescueCrud } from "./rescue-crud";
 
 export const metadata: Metadata = { title: "จัดการจุดรถกู้ชีพ" };
