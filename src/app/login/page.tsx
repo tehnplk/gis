@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
-import { auth, signIn, signOut } from "@/auth";
+import { getSession, signIn, signOut } from "@/auth";
 
 export const metadata: Metadata = {
   title: "เข้าสู่ระบบ — EMS - GIS",
@@ -102,7 +102,7 @@ export default async function LoginPage({
   const callbackUrl = localCallbackUrl(params?.callbackUrl);
   const error = typeof params?.error === "string" ? params.error : "";
 
-  const session = await auth();
+  const session = await getSession();
   // role guest เข้าหน้าไหนก็ไม่ได้ proxy จึงส่งกลับมาที่นี่เสมอ
   // ถ้า redirect ต่อจะวนไม่รู้จบจนเปิดเว็บไม่ได้เลย ต้องหยุดไว้แล้วแสดงสถานะแทน
   const isGuest = session?.user?.role === "guest";

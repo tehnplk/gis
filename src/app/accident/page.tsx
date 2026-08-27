@@ -6,7 +6,7 @@ import {
   getDistricts,
   getTotalCount,
 } from "./accident-data";
-import { auth } from "@/auth";
+import { getSession } from "@/auth";
 import AccidentView from "./accident-view";
 import { DEFAULT_CBD } from "./cbd";
 import { getDistrictBoundsByName, getDistrictExtent } from "./boundary-data";
@@ -31,7 +31,7 @@ export default async function AccidentPage({
 }) {
   const params = await searchParams;
   // proxy.ts กันไว้แล้วว่าต้องเข้าสู่ระบบก่อน ตรงนี้แค่ดึงข้อมูลมาแสดงบนอวาตาร์
-  const session = await auth();
+  const session = await getSession();
   const filters = {
     dateFrom: first(params.from),
     dateTo: first(params.to),

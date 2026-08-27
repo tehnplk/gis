@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { auth } from "@/auth";
+import { getSession } from "@/auth";
 import LogoutButton from "@/components/logout-button";
 import ManagementNav from "./management-nav";
 
@@ -10,7 +10,7 @@ export default async function ManagementLayout({
   children: ReactNode;
 }) {
   // proxy.ts กันไว้แล้วว่าต้องเข้าสู่ระบบก่อน ตรงนี้แค่ดึงชื่อมาแสดง
-  const session = await auth();
+  const session = await getSession();
   return (
     <main className="min-h-screen flex-1 bg-slate-100 text-slate-950">
       <header className="border-b border-sky-950 bg-sky-800 text-white shadow-sm">

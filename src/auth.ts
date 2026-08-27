@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { DEV_SKIP_AUTH, devSession } from "@/lib/dev-auth";
 import {
   registerProviderUser,
   verifyProviderProfile,
@@ -104,3 +105,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/**
+ * ใช้แทน `auth()` ในทุกที่ที่แค่ "อ่าน session" (page / layout / server action)
+ * เพราะโหมด dev ต้องได้ session ปลอมกลับไป ไม่งั้นหน้าจะคิดว่ายังไม่ได้เข้าสู่ระบบ
+ * ส่วน `auth` ตัวจริงยังใช้ครอบ proxy.ts และ handlers ตามเดิม
+ */
+export async function getSession() {
+  if (DEV_SKIP_AUTH) return devSession();
+  return auth();
+}

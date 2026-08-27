@@ -7,7 +7,7 @@ import {
   positiveId,
   statusUrl,
 } from "@/app/accident/(management)/validation";
-import { auth } from "@/auth";
+import { getSession } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ASSIGNABLE_ROLES, type AssignableRole } from "./roles";
 
@@ -18,7 +18,7 @@ const PATH = "/manage-user";
  * จึงต้องตรวจสิทธิ์ซ้ำในนี้ด้วยเสมอ ไม่พึ่ง middleware อย่างเดียว
  */
 async function requireSuperUser() {
-  const session = await auth();
+  const session = await getSession();
   if (session?.user?.role !== "super") {
     throw new Error("เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขสิทธิ์ผู้ใช้ได้");
   }

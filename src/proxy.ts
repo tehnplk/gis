@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { DEV_SKIP_AUTH } from "@/lib/dev-auth";
 
 /**
  * ทั้งระบบต้องเข้าสู่ระบบก่อน — `/accident` ครอบคลุมหน้าจัดการทุกหน้าที่อยู่ใต้มันด้วย
- * (`/` ก็ redirect มาที่นี่ จึงถูกกันไปในตัว)
+ * (`/` redirect ไป `/portal` ซึ่งอยู่ในลิสต์นี้ จึงถูกกันไปในตัว)
  */
-const PROTECTED_PAGE_PREFIXES = ["/accident", "/manage-user"];
+const PROTECTED_PAGE_PREFIXES = ["/portal", "/accident", "/manage-user"];
 
 /**
  * API ตอบเป็น JSON 401/403 แทนการ redirect เพราะ fetch ฝั่ง client
@@ -29,6 +30,9 @@ function matchesPrefix(pathname: string, prefixes: string[]) {
  * (auth.ts ตั้ง `session.strategy = "jwt"` จึงไม่ต้องแตะฐานข้อมูลในชั้นนี้เลย)
  */
 export const proxy = auth((request) => {
+  // โหมด dev ข้ามการตรวจทั้งหมด (ดู lib/dev-auth.ts) — เปิดหน้าไหนก็ได้โดยไม่ต้อง login
+  if (DEV_SKIP_AUTH) return NextResponse.next();
+
   const { pathname, search } = request.nextUrl;
   const isProtectedApi = matchesPrefix(pathname, PROTECTED_API_PREFIXES);
   const isProtectedPage = matchesPrefix(pathname, PROTECTED_PAGE_PREFIXES);
