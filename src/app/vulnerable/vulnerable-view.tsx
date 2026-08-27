@@ -3,7 +3,11 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { CrudModal, ModalCancelButton, ModalSubmitButton } from "@/components/crud-modal";
 import { SubmitButton } from "@/components/form-controls";
-import { MapTopbar, TopbarCount } from "@/components/map-topbar";
+import {
+  GHOST_BUTTON_CLASS,
+  MapTopbar,
+  TopbarCount,
+} from "@/components/map-topbar";
 import { Field, INPUT_CLASS, TEXTAREA_CLASS } from "@/components/management-ui";
 import UserMenu from "@/components/user-menu";
 import {
@@ -174,6 +178,7 @@ export default function VulnerableView({
   /** ผลของ server action รอบล่าสุด (สำเร็จ/ผิดพลาด) วาดมาจาก server component */
   notice: ReactNode;
 }) {
+  const [placing, setPlacing] = useState(false);
   const [pending, setPending] = useState<PickedPoint | null>(null);
   const [hidden, setHidden] = useState<Set<number>>(new Set());
 
@@ -185,6 +190,7 @@ export default function VulnerableView({
   if (pins !== renderedPins) {
     setRenderedPins(pins);
     setPending(null);
+    setPlacing(false);
   }
 
   const toggleGroup = useCallback((id: number) => {
@@ -203,11 +209,20 @@ export default function VulnerableView({
   return (
     <>
       <MapTopbar title="GIS - กลุ่มเปราะบาง">
-        <p className="flex items-center gap-1.5 text-xs text-sky-100 sm:text-sm">
+        <button
+          type="button"
+          disabled={!canPlace}
+          onClick={() => setPlacing((value) => !value)}
+          title={canPlace ? undefined : "สร้างกลุ่มอย่างน้อยหนึ่งกลุ่มก่อนจึงจะปักหมุดได้"}
+          aria-pressed={placing}
+          className={`${GHOST_BUTTON_CLASS} w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto ${
+            placing ? "bg-amber-400 text-slate-950 hover:bg-amber-400" : ""
+          }`}
+        >
           <svg
             aria-hidden
             viewBox="0 0 20 20"
-            className="size-4 shrink-0"
+            className="size-4"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.6"
@@ -217,10 +232,8 @@ export default function VulnerableView({
             <path d="M10 17.5s5.5-4.6 5.5-8.5a5.5 5.5 0 1 0-11 0c0 3.9 5.5 8.5 5.5 8.5Z" />
             <circle cx="10" cy="9" r="1.9" />
           </svg>
-          {canPlace
-            ? "คลิกตำแหน่งบนแผนที่เพื่อปักหมุด"
-            : "สร้างกลุ่มก่อนจึงจะปักหมุดได้"}
-        </p>
+          {placing ? "ยกเลิกการปักหมุด" : "ปักหมุด"}
+        </button>
 
         <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
           <TopbarCount>
@@ -242,7 +255,9 @@ export default function VulnerableView({
 
           <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-500 shadow-sm">
             {canPlace
-              ? "คลิกตำแหน่งบนแผนที่เพื่อปักหมุด แล้วกรอกชื่อและเลือกกลุ่มในหน้าต่างที่เปิดขึ้น"
+              ? placing
+                ? "ลากหมุดไปยังตำแหน่งที่ต้องการ (ลากชนขอบจอแล้วแผนที่จะเลื่อนตาม) แล้วคลิกที่หมุดเพื่อกรอกข้อมูล"
+                : 'กดปุ่ม "ปักหมุด" ด้านบน แล้วลากหมุดไปยังตำแหน่งที่ต้องการ'
               : "สร้างกลุ่มอย่างน้อยหนึ่งกลุ่มก่อนจึงจะปักหมุดได้"}
           </p>
         </aside>
@@ -250,9 +265,8 @@ export default function VulnerableView({
         <div className="min-h-[26rem] flex-1 overflow-hidden rounded-xl border border-slate-200 shadow-sm">
           <MapLoader
             pins={visiblePins}
-            picking={canPlace}
-            pending={pending}
-            onPick={setPending}
+            picking={placing}
+            onConfirm={setPending}
             renderPopup={(pin) => (
               <div className="min-w-44 space-y-1.5">
                 <p className="text-sm font-semibold text-slate-950">{pin.name}</p>

@@ -14,8 +14,8 @@ import {
 import type { AccidentPoint } from "./accident-data";
 import type { BoundsTuple } from "./boundary-data";
 import type { FocusRequest } from "./accident-view";
-import BasemapSwitch from "./basemap-switch";
-import { BASE_MAPS } from "./basemaps";
+import BasemapSwitch from "@/components/basemap-switch";
+import { BASE_MAPS } from "@/lib/basemaps";
 import BoundaryLayer from "./boundary-layer";
 import MapControlPanel from "./map-control-panel";
 import HeatmapLayer from "./heatmap-layer";

@@ -1,18 +1,21 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { useEffect, useMemo } from "react";
+import type { LatLngLiteral, Marker as LeafletMarker } from "leaflet";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
   Popup,
   ScaleControl,
   TileLayer,
+  Tooltip,
   useMap,
-  useMapEvents,
 } from "react-leaflet";
+import BasemapSwitch from "@/components/basemap-switch";
+import { BASE_MAPS } from "@/lib/basemaps";
 import type { VulnerablePin } from "./vulnerable-data";
-import { groupPinIcon, pendingPinIcon } from "./pin-icon";
+import { dragPinIcon, groupPinIcon } from "./pin-icon";
 
 /** ศูนย์กลาง จ.พิษณุโลก — ใช้เมื่อยังไม่มีหมุดให้ fit */
 const DEFAULT_CENTER: [number, number] = [16.82, 100.26];
@@ -20,20 +23,92 @@ const DEFAULT_ZOOM = 10;
 
 export type PickedPoint = { lat: number; lng: number };
 
-function ClickPicker({
-  enabled,
-  onPick,
-}: {
-  enabled: boolean;
-  onPick: (point: PickedPoint) => void;
-}) {
-  useMapEvents({
-    click(event) {
-      if (enabled) onPick({ lat: event.latlng.lat, lng: event.latlng.lng });
-    },
+/**
+ * หน้านี้ใช้แผนที่ฐานแค่ 2 แบบ — ถนนไว้ดูชื่อซอย/ถนน ดาวเทียมไว้เทียบหลังคาบ้านจริง
+ * โหมดมืดกับภูมิประเทศไม่ช่วยงานหาที่อยู่ จึงตัดออกให้แถบเลือกสั้นลง
+ */
+const MAPS = BASE_MAPS.filter((map) => map.id === "osm" || map.id === "satellite");
+
+/** ป้าย "คลิกที่หมุดเพื่อบันทึกข้อมูล" หลังปล่อยหมุด — โชว์สั้น ๆ แล้วหายเอง */
+const DROP_HINT_MS = 2000;
+
+/**
+ * หมุดสำหรับเลือกตำแหน่งในโหมดปักหมุด — ลากหมุดไปวางเองได้ตรง ๆ
+ * `autoPan` ทำให้แผนที่เลื่อนตามเมื่อลากหมุดไปชนขอบจอ จึงลากข้ามพื้นที่ไกล ๆ ได้
+ * และเมื่อปล่อยหมุด แผนที่จะ pan ให้หมุดกลับมาอยู่กลางจอเสมอ
+ *
+ * วางหมุดไว้กลางจอตอนเข้าโหมด (`map.getCenter()` ตอน mount) แล้วปล่อยให้ผู้ใช้ลากต่อ
+ */
+function DragPin({ onConfirm }: { onConfirm: (point: PickedPoint) => void }) {
+  const map = useMap();
+  const markerRef = useRef<LeafletMarker>(null);
+  // ป้ายแนะนำมีไว้บอกวิธีครั้งแรกเท่านั้น พอผู้ใช้เริ่มลากก็แปลว่าเข้าใจแล้ว
+  // ซ่อนทิ้งไปเลยไม่ต้องกลับมาบังแผนที่อีก จนกว่าจะเข้าโหมดปักหมุดรอบใหม่
+  // (DragPin ถูก unmount ตอนออกจากโหมด state จึงรีเซ็ตเองอยู่แล้ว)
+  const [hintDismissed, setHintDismissed] = useState(false);
+  const [dropHint, setDropHint] = useState(false);
+  const dropHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [position, setPosition] = useState<LatLngLiteral>(() => {
+    const center = map.getCenter();
+    return { lat: center.lat, lng: center.lng };
   });
 
-  return null;
+  // ออกจากโหมดปักหมุดกลางคัน timer ต้องไม่ค้างไปสั่ง setState ตอน component ถูกถอดแล้ว
+  useEffect(() => () => {
+    if (dropHintTimer.current) clearTimeout(dropHintTimer.current);
+  }, []);
+
+  return (
+    <Marker
+      ref={markerRef}
+      draggable
+      autoPan
+      autoPanSpeed={14}
+      position={position}
+      icon={dragPinIcon}
+      zIndexOffset={1000}
+      eventHandlers={{
+        dragstart: () => {
+          setHintDismissed(true);
+          setDropHint(false);
+          if (dropHintTimer.current) clearTimeout(dropHintTimer.current);
+        },
+        dragend: () => {
+          const latlng = markerRef.current?.getLatLng();
+          if (!latlng) return;
+          setPosition({ lat: latlng.lat, lng: latlng.lng });
+
+          // บอกขั้นตอนถัดไปให้ตรงจังหวะที่ผู้ใช้เพิ่งวางหมุดเสร็จ แล้วเก็บป้ายเองใน 3 วินาที
+          setDropHint(true);
+          if (dropHintTimer.current) clearTimeout(dropHintTimer.current);
+          dropHintTimer.current = setTimeout(() => setDropHint(false), DROP_HINT_MS);
+          // ปล่อยหมุดแล้วเลื่อนแผนที่ให้หมุดกลับมาอยู่กลางจอเสมอ
+          // ผู้ใช้จึงเห็นรอบ ๆ ตำแหน่งที่เลือกได้เต็มที่ และลากต่อได้ทุกทิศทาง
+          map.panTo(latlng);
+        },
+        // Leaflet ไม่ยิง click หลังการลาก (ตรวจ `_moved` ให้แล้ว)
+        // การคลิกจึงหมายถึง "ยืนยันตำแหน่งนี้" เสมอ
+        click: () => {
+          const latlng = markerRef.current?.getLatLng() ?? position;
+          onConfirm({ lat: latlng.lat, lng: latlng.lng });
+        },
+      }}
+    >
+      {(dropHint || !hintDismissed) && (
+        <Tooltip
+          // เปลี่ยนข้อความคนละความหมาย ให้ Leaflet สร้างป้ายใหม่แทนการแก้ของเดิม
+          key={dropHint ? "drop" : "intro"}
+          permanent
+          direction="bottom"
+          offset={[0, 6]}
+        >
+          {dropHint
+            ? "คลิกที่หมุดเพื่อบันทึกข้อมูล"
+            : "ลากหมุดไปยังตำแหน่งที่ต้องการ แล้วคลิกที่หมุด"}
+        </Tooltip>
+      )}
+    </Marker>
+  );
 }
 
 /** ขยับมุมมองให้เห็นหมุดทั้งหมดครั้งแรกที่โหลด ไม่แย่งการซูมของผู้ใช้หลังจากนั้น */
@@ -56,15 +131,13 @@ function FitPins({ pins }: { pins: VulnerablePin[] }) {
 export default function VulnerableMap({
   pins,
   picking,
-  pending,
-  onPick,
+  onConfirm,
   renderPopup,
 }: {
   pins: VulnerablePin[];
-  /** คลิกบนแผนที่แล้วปักหมุดได้ (ปิดไว้เมื่อยังไม่มีกลุ่มให้เลือก) */
+  /** อยู่ในโหมดปักหมุด — แสดงหมุดที่ลากไปวางตำแหน่งได้ */
   picking: boolean;
-  pending: PickedPoint | null;
-  onPick: (point: PickedPoint) => void;
+  onConfirm: (point: PickedPoint) => void;
   renderPopup: (pin: VulnerablePin) => React.ReactNode;
 }) {
   const icons = useMemo(() => {
@@ -75,10 +148,14 @@ export default function VulnerableMap({
     return cache;
   }, [pins]);
 
+  const [basemapId, setBasemapId] = useState(MAPS[0].id);
+  const basemap = useMemo(
+    () => MAPS.find((map) => map.id === basemapId) ?? MAPS[0],
+    [basemapId],
+  );
+
   return (
-    // react-leaflet ตั้ง className ให้ container แค่ตอนสร้าง เปลี่ยนทีหลังไม่มีผล
-    // จึงสลับคลาสที่ div ที่ครอบอยู่แทน (นิยาม .pin-placing ไว้ใน globals.css)
-    <div className={`h-full w-full ${picking ? "pin-placing" : ""}`}>
+    <div className="relative h-full w-full">
       <MapContainer
         center={DEFAULT_CENTER}
         zoom={DEFAULT_ZOOM}
@@ -86,13 +163,14 @@ export default function VulnerableMap({
         className="h-full w-full"
       >
         <TileLayer
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          maxZoom={19}
+          key={basemap.id}
+          url={basemap.url}
+          attribution={basemap.attribution}
+          maxZoom={basemap.maxZoom}
+          subdomains={basemap.subdomains ?? "abc"}
         />
         <ScaleControl position="bottomleft" imperial={false} />
         <FitPins pins={pins} />
-        <ClickPicker enabled={picking} onPick={onPick} />
 
         {pins.map((pin) => (
           <Marker
@@ -104,10 +182,14 @@ export default function VulnerableMap({
           </Marker>
         ))}
 
-        {pending && (
-          <Marker position={[pending.lat, pending.lng]} icon={pendingPinIcon} />
-        )}
+        {picking && <DragPin onConfirm={onConfirm} />}
       </MapContainer>
+
+      {/* วางนอก MapContainer เพื่อไม่ให้คลิกทะลุไปโดนแผนที่
+          z สูงกว่าแผง control ของ Leaflet (1000) แต่ยังต่ำกว่า topbar (1200) */}
+      <div className="pointer-events-none absolute top-2 right-2 left-14 z-[1000] flex justify-end sm:top-3 sm:right-3 sm:left-auto">
+        <BasemapSwitch activeId={basemap.id} onChange={setBasemapId} maps={MAPS} />
+      </div>
     </div>
   );
 }

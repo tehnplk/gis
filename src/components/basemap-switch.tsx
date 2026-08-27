@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { BASE_MAPS } from "./basemaps";
+import { BASE_MAPS, type BaseMap } from "@/lib/basemaps";
 
 /**
  * สลับแผนที่ฐาน — แยกเป็นตัวลอยอิสระ ไม่ขึ้นกับแผงควบคุม
@@ -10,13 +10,16 @@ import { BASE_MAPS } from "./basemaps";
 export default function BasemapSwitch({
   activeId,
   onChange,
+  /** จำกัดตัวเลือกได้ต่อหน้า — หน้ากลุ่มเปราะบางใช้แค่แผนที่ถนนกับดาวเทียม */
+  maps = BASE_MAPS,
 }: {
   activeId: string;
   onChange: (id: string) => void;
+  maps?: readonly BaseMap[];
 }) {
   const listId = useId();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const activeMap = BASE_MAPS.find((map) => map.id === activeId) ?? BASE_MAPS[0];
+  const activeMap = maps.find((map) => map.id === activeId) ?? maps[0];
 
   return (
     <div className="pointer-events-auto relative min-w-0 flex-1 sm:flex-none">
@@ -49,7 +52,7 @@ export default function BasemapSwitch({
         aria-label="เลือกแผนที่ฐาน"
         className={`${mobileOpen ? "flex" : "hidden"} absolute left-0 top-full z-10 mt-2 w-full flex-col overflow-hidden rounded-lg border border-black/15 bg-white shadow-lg sm:static sm:mt-0 sm:flex sm:w-auto sm:flex-row sm:shadow-md dark:border-white/20 dark:bg-neutral-900`}
       >
-        {BASE_MAPS.map((map) => {
+        {maps.map((map) => {
           const selected = map.id === activeId;
           return (
             <button
